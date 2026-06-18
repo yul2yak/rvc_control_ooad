@@ -52,7 +52,10 @@ void RvcController::beginSurroundedAvoidance() {
 }
 
 void RvcController::doTurnOnce() {
-    if (movement_.canTurnRight()) {
+    const int heading = static_cast<int>(map_.rvcHeading());
+    const Direction rightHeading = static_cast<Direction>((heading + 1) % 4);
+    if (movement_.canTurnRight() &&
+        !obstacleDetector_.wouldForwardLeadToSurroundedFrom(rightHeading)) {
         movement_.turnRight();
     } else {
         movement_.turnLeft();
@@ -71,19 +74,23 @@ bool RvcController::stepManeuver() {
                 firstTurnDone_ = true;
                 return true;
             }
-            if (map_.isFrontBlocked() && turnAttemptsFront_ < 3) {
-                doTurnOnce();
-                ++turnAttemptsFront_;
-                return true;
-            }
-            if (map_.isSurrounded() && turnAttemptsSurrounded_ < 4) {
-                doTurnOnce();
-                ++turnAttemptsSurrounded_;
-                return true;
-            }
-            if (!map_.isFrontBlocked()) {
-                maneuverPhase_ = ManeuverPhase::Forward;
-                return true;
+            {
+                const bool frontTrap = map_.isFrontBlocked() ||
+                                       obstacleDetector_.wouldForwardLeadToSurrounded();
+                if (frontTrap && turnAttemptsFront_ < 3) {
+                    doTurnOnce();
+                    ++turnAttemptsFront_;
+                    return true;
+                }
+                if (obstacleDetector_.isSurrounded() && turnAttemptsSurrounded_ < 4) {
+                    doTurnOnce();
+                    ++turnAttemptsSurrounded_;
+                    return true;
+                }
+                if (!frontTrap) {
+                    maneuverPhase_ = ManeuverPhase::Forward;
+                    return true;
+                }
             }
             maneuverPhase_ = ManeuverPhase::Idle;
             return false;

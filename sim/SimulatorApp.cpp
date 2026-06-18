@@ -22,6 +22,8 @@ const sf::Color kObstacleColor(220, 60, 60);
 const sf::Color kDustColor(240, 210, 50);
 const sf::Color kRvcBodyColor(50, 110, 230);
 const sf::Color kRvcArrowColor(180, 220, 255);
+const sf::Color kRvcBoostBodyColor(240, 130, 35);
+const sf::Color kRvcBoostArrowColor(255, 230, 160);
 const sf::Color kButtonFill(50, 55, 70);
 const sf::Color kButtonActive(70, 120, 180);
 const sf::Color kButtonHover(65, 75, 95);
@@ -455,7 +457,7 @@ void SimulatorApp::appendTickLogLine() {
     ss << " session=" << (engine_.isSessionActive() ? 1 : 0)
        << " maneuver=" << (engine_.controller().maneuverInProgress() ? 1 : 0)
        << " front_blk=" << (map.isFrontBlocked() ? 1 : 0)
-       << " surrounded=" << (map.isSurrounded() ? 1 : 0);
+       << " surrounded=" << (engine_.obstacleDetector().isSurrounded() ? 1 : 0);
 
     const auto& path = map.path();
     if (!path.empty()) {
@@ -708,17 +710,23 @@ void SimulatorApp::drawRvc(const rvc::RvcSnapshot& snap) {
     const float pad = 2.f;
     const float radius = (static_cast<float>(kCellSize) - pad * 2.f) / 2.f;
 
+    const bool boosted = snap.level == rvc::OutputLevel::Boosted;
+    const sf::Color bodyColor = boosted ? kRvcBoostBodyColor : kRvcBodyColor;
+    const sf::Color outlineColor =
+        boosted ? sf::Color(180, 80, 10) : sf::Color(30, 70, 160);
+    const sf::Color arrowColor = boosted ? kRvcBoostArrowColor : kRvcArrowColor;
+
     sf::CircleShape body(radius);
-    body.setFillColor(kRvcBodyColor);
-    body.setOutlineColor(sf::Color(30, 70, 160));
+    body.setFillColor(bodyColor);
+    body.setOutlineColor(outlineColor);
     body.setOutlineThickness(2.f);
     body.setOrigin(radius, radius);
     body.setPosition(cx, cy);
     window_.draw(body);
 
     sf::ConvexShape arrow(3);
-    arrow.setFillColor(kRvcArrowColor);
-    arrow.setOutlineColor(sf::Color(255, 255, 255, 120));
+    arrow.setFillColor(arrowColor);
+    arrow.setOutlineColor(boosted ? sf::Color(255, 255, 255, 180) : sf::Color(255, 255, 255, 120));
     arrow.setOutlineThickness(1.f);
     const float s = static_cast<float>(kCellSize) * 0.16f;
     switch (snap.heading) {
@@ -838,7 +846,15 @@ void SimulatorApp::drawLegend() {
     rvcDot.setOutlineThickness(1.f);
     rvcDot.setPosition(x, y + 1.f);
     window_.draw(rvcDot);
-    drawTextLine(tr("청소기 (파랑 원 + 방향)", "RVC (blue circle + arrow)"), x + 22.f, y, 12,
+
+    sf::CircleShape boostDot(7.f);
+    boostDot.setFillColor(kRvcBoostBodyColor);
+    boostDot.setOutlineColor(sf::Color(180, 80, 10));
+    boostDot.setOutlineThickness(1.f);
+    boostDot.setPosition(x + 18.f, y + 1.f);
+    window_.draw(boostDot);
+
+    drawTextLine(tr("청소기 (파랑 / 부스터 주황)", "RVC (blue / boost orange)"), x + 40.f, y, 12,
                  sf::Color(190, 190, 200));
     y += kLegendRow;
 

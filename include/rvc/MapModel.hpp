@@ -32,8 +32,10 @@ public:
     void clearDustAt(const Position& pos);
     const std::vector<Position>& dustCells() const { return dust_; }
 
+    /** Current cell or reachable front cell (not blocked by obstacle). */
+    bool hasDetectableDust() const;
+
     bool isFrontBlocked() const;
-    bool isSurrounded() const;
 
     Position rvcPosition() const { return rvcPos_; }
     Direction rvcHeading() const { return heading_; }

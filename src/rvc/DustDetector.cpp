@@ -7,7 +7,7 @@ namespace rvc {
 DustDetector::DustDetector(const MapModel& map) : map_(map) {}
 
 bool DustDetector::isDustPresent() const {
-    return map_.hasDust(map_.rvcPosition());
+    return map_.hasDetectableDust();
 }
 
 }  // namespace rvc

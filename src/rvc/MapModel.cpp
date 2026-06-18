@@ -44,19 +44,17 @@ void MapModel::clearDustAt(const Position& pos) {
     dust_.erase(std::remove(dust_.begin(), dust_.end(), pos), dust_.end());
 }
 
+bool MapModel::hasDetectableDust() const {
+    if (hasDust(rvcPos_)) {
+        return true;
+    }
+    const Position front = cellInFront();
+    return isInBounds(front) && !isObstacle(front) && hasDust(front);
+}
+
 bool MapModel::isFrontBlocked() const {
     const Position front = cellInFront();
     return !isInBounds(front) || isObstacle(front);
-}
-
-bool MapModel::isSurrounded() const {
-    const Position front = cellInFront();
-    const Position left = cellToLeft();
-    const Position right = cellToRight();
-    const bool frontBlocked = !isInBounds(front) || isObstacle(front);
-    const bool leftBlocked = !isInBounds(left) || isObstacle(left);
-    const bool rightBlocked = !isInBounds(right) || isObstacle(right);
-    return frontBlocked && leftBlocked && rightBlocked;
 }
 
 Position MapModel::cellInFront() const {

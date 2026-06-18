@@ -4,21 +4,23 @@
 
 namespace rvc {
 
-EnvironmentEvent detectEnvironmentEvent(const MapModel& map) {
-    if (map.isSurrounded()) {
+EnvironmentEvent detectEnvironmentEvent(const MapModel& map,
+                                        const ObstacleDetector& obstacleDetector) {
+    if (obstacleDetector.isSurrounded()) {
         return EnvironmentEvent::Surrounded;
     }
     if (map.isFrontBlocked()) {
         return EnvironmentEvent::ObstacleFront;
     }
-    if (map.hasDust(map.rvcPosition())) {
+    if (map.hasDetectableDust()) {
         return EnvironmentEvent::Dust;
     }
     return EnvironmentEvent::None;
 }
 
 SimulationEngine::SimulationEngine()
-    : obstacleDetector_(map_),
+    : sensorReader_(map_),
+      obstacleDetector_(sensorReader_),
       dustDetector_(map_),
       controller_(map_, obstacleDetector_, dustDetector_) {}
 
@@ -70,7 +72,7 @@ void SimulationEngine::triggerDust() {
 }
 
 void SimulationEngine::processEnvironmentEvent() {
-    switch (detectEnvironmentEvent(map_)) {
+    switch (detectEnvironmentEvent(map_, obstacleDetector_)) {
         case EnvironmentEvent::Surrounded:
             controller_.beginSurroundedAvoidance();
             controller_.stepManeuver();

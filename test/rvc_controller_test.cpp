@@ -1,4 +1,5 @@
 #include "rvc/DustDetector.hpp"
+#include "rvc/GridSensorReader.hpp"
 #include "rvc/ObstacleDetector.hpp"
 #include "rvc/RvcController.hpp"
 
@@ -13,14 +14,22 @@ rvc::MapModel makeMap(int w, int h, rvc::Position start, rvc::Direction heading)
     return map;
 }
 
+struct ObstacleSense {
+    rvc::MapModel& map;
+    rvc::GridSensorReader sensor;
+    rvc::ObstacleDetector obs;
+
+    explicit ObstacleSense(rvc::MapModel& m) : map(m), sensor(m), obs(sensor) {}
+};
+
 }  // namespace
 
 // FR-001, FR-002, NFR-002 — startAutomaticCleaning (SD-UC-001-S01)
 TEST(RvcControllerTest, StartAutomaticCleaning_FR001_FR002) {
     auto map = makeMap(6, 6, {1, 3}, rvc::Direction::North);
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.startAutomaticCleaning();
     const rvc::RvcSnapshot snap = ctrl.snapshot();
@@ -33,9 +42,9 @@ TEST(RvcControllerTest, StartAutomaticCleaning_FR001_FR002) {
 TEST(RvcControllerTest, HandleObstacleTurnRight_FR003) {
     auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
     map.setObstacles({{2, 2}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.handleObstacleDetected();
     const rvc::RvcSnapshot snap = ctrl.snapshot();
@@ -47,9 +56,9 @@ TEST(RvcControllerTest, HandleObstacleTurnRight_FR003) {
 TEST(RvcControllerTest, HandleObstacleTurnLeft_FR003) {
     auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
     map.setObstacles({{2, 2}, {3, 3}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.handleObstacleDetected();
     EXPECT_EQ(ctrl.snapshot().heading, rvc::Direction::West);
@@ -59,9 +68,9 @@ TEST(RvcControllerTest, HandleObstacleTurnLeft_FR003) {
 TEST(RvcControllerTest, HandleSurroundedBackward_FR004) {
     auto map = makeMap(6, 6, {2, 2}, rvc::Direction::North);
     map.setObstacles({{2, 1}, {1, 2}, {3, 2}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.handleSurroundedObstacle();
     const rvc::RvcSnapshot snap = ctrl.snapshot();
@@ -73,9 +82,9 @@ TEST(RvcControllerTest, HandleSurroundedBackward_FR004) {
 TEST(RvcControllerTest, HandleSurroundedTurnLeft_FR004) {
     auto map = makeMap(6, 6, {2, 2}, rvc::Direction::North);
     map.setObstacles({{2, 1}, {1, 2}, {3, 2}, {3, 3}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.handleSurroundedObstacle();
     EXPECT_EQ(ctrl.snapshot().heading, rvc::Direction::West);
@@ -85,9 +94,9 @@ TEST(RvcControllerTest, HandleSurroundedTurnLeft_FR004) {
 TEST(RvcControllerTest, HandleDustDetected_FR005) {
     auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
     map.setDust({{2, 3}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.handleDustDetected();
     const rvc::RvcSnapshot snap = ctrl.snapshot();
@@ -103,25 +112,41 @@ TEST(RvcControllerTest, DustDetectorInterface_NFR003) {
     EXPECT_TRUE(dust.isDustPresent());
 }
 
-// FR-005 — dust cleared when cleaned
+// FR-005 — dust cleared when cleaned via forward move (no boost without detection path)
 TEST(RvcControllerTest, DustClearedOnForward_FR005) {
     auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
     map.setDust({{2, 2}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.startAutomaticCleaning();
     EXPECT_FALSE(map.hasDust({2, 2}));
+}
+
+// FR-005 — dust ahead triggers boost then forward (ST-008 style)
+TEST(RvcControllerTest, HandleDustDetectedAhead_FR005) {
+    auto map = makeMap(6, 6, {2, 4}, rvc::Direction::North);
+    map.setDust({{2, 3}});
+    ObstacleSense sense(map);
+    rvc::DustDetector dust(map);
+    rvc::RvcController ctrl(map, sense.obs, dust);
+
+    EXPECT_TRUE(dust.isDustPresent());
+    ctrl.handleDustDetected();
+    const rvc::RvcSnapshot snap = ctrl.snapshot();
+    EXPECT_EQ(snap.level, rvc::OutputLevel::Boosted);
+    EXPECT_EQ(snap.position, (rvc::Position{2, 3}));
+    EXPECT_FALSE(map.hasDust({2, 3}));
 }
 
 // FR-003/FR-004 — keep turning until front is clear (no left/right trap)
 TEST(RvcControllerTest, TurnAsideUntilFrontClear_FR003) {
     auto map = makeMap(6, 6, {2, 2}, rvc::Direction::North);
     map.setObstacles({{2, 1}, {1, 2}, {3, 2}, {3, 3}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
 
     ctrl.handleSurroundedObstacle();
     EXPECT_FALSE(map.isFrontBlocked());
@@ -131,9 +156,9 @@ TEST(RvcControllerTest, TurnAsideUntilFrontClear_FR003) {
 TEST(RvcControllerTest, CleaningStopsDuringManeuver_S04) {
     auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
     map.setObstacles({{2, 2}});
-    rvc::ObstacleDetector obs(map);
+    ObstacleSense sense(map);
     rvc::DustDetector dust(map);
-    rvc::RvcController ctrl(map, obs, dust);
+    rvc::RvcController ctrl(map, sense.obs, dust);
     ctrl.startAutomaticCleaning();
     ctrl.handleObstacleDetected();
     EXPECT_TRUE(ctrl.snapshot().cleaningActive);

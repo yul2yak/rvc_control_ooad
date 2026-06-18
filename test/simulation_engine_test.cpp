@@ -70,6 +70,47 @@ TEST(SimulationEngineTest, DustTrigger_FR005) {
     EXPECT_EQ(engine.controller().snapshot().level, rvc::OutputLevel::Boosted);
 }
 
+// FR-005 — auto run boosts when approaching dust (ST-008)
+TEST(SimulationEngineTest, AutoDustBoostMidRun_FR005) {
+    rvc::MapScenario scenario;
+    scenario.width = 10;
+    scenario.height = 10;
+    scenario.rvcStart = {4, 7};
+    scenario.rvcHeading = rvc::Direction::North;
+    scenario.dust = {{4, 5}};
+    scenario.trigger = "start";
+    scenario.ticks = 2;
+
+    rvc::SimulationEngine engine;
+    engine.loadScenario(scenario);
+    engine.runTicks(1);
+    EXPECT_NE(engine.controller().snapshot().level, rvc::OutputLevel::Boosted);
+    EXPECT_EQ(engine.map().rvcPosition(), (rvc::Position{4, 6}));
+
+    engine.runTicks(1);
+    EXPECT_EQ(engine.controller().snapshot().level, rvc::OutputLevel::Boosted);
+    EXPECT_EQ(engine.map().rvcPosition(), (rvc::Position{4, 5}));
+}
+
+// custom_map (2,0)/(2,1) top-corner trap — must not oscillate indefinitely
+TEST(SimulationEngineTest, CustomMapTopCornerEscapesSurroundedLoop) {
+    rvc::MapScenario scenario;
+    scenario.width = 12;
+    scenario.height = 10;
+    scenario.rvcStart = {2, 0};
+    scenario.rvcHeading = rvc::Direction::North;
+    scenario.obstacles = {{1, 1}, {1, 0}, {4, 0}, {3, 0}, {3, 1}, {3, 2}, {1, 2}};
+    scenario.trigger = "start";
+
+    rvc::SimulationEngine engine;
+    engine.loadScenario(scenario);
+    engine.runTicks(15);
+
+    const rvc::Position pos = engine.map().rvcPosition();
+    EXPECT_GE(pos.y, 2);
+    EXPECT_NE(pos, (rvc::Position{2, 0}));
+}
+
 // ST-025 regression — active session + surrounded L/R/F during auto ticks (sim edit bug)
 TEST(SimulationEngineTest, ReloadLayoutKeepsSession_SurroundedAutoTick) {
     rvc::MapScenario scenario;
@@ -86,7 +127,7 @@ TEST(SimulationEngineTest, ReloadLayoutKeepsSession_SurroundedAutoTick) {
 
     scenario.obstacles = {{5, 5}, {4, 6}, {6, 6}};
     engine.reloadLayout(scenario);
-    EXPECT_TRUE(engine.map().isSurrounded());
+    EXPECT_TRUE(engine.obstacleDetector().isSurrounded());
 
     const rvc::Position posBefore = engine.map().rvcPosition();
     const rvc::Direction headingBefore = engine.map().rvcHeading();

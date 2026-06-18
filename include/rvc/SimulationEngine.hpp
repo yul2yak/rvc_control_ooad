@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rvc/DustDetector.hpp"
+#include "rvc/GridSensorReader.hpp"
 #include "rvc/MapJson.hpp"
 #include "rvc/ObstacleDetector.hpp"
 #include "rvc/RvcController.hpp"
@@ -9,7 +10,7 @@ namespace rvc {
 
 enum class EnvironmentEvent { None, ObstacleFront, Surrounded, Dust };
 
-EnvironmentEvent detectEnvironmentEvent(const MapModel& map);
+EnvironmentEvent detectEnvironmentEvent(const MapModel& map, const ObstacleDetector& obstacleDetector);
 
 class SimulationEngine {
 public:
@@ -21,6 +22,7 @@ public:
     RvcController& controller() { return controller_; }
     const RvcController& controller() const { return controller_; }
     MapModel& map() { return map_; }
+    const ObstacleDetector& obstacleDetector() const { return obstacleDetector_; }
 
     void triggerStart();
     void triggerObstacle();
@@ -34,6 +36,7 @@ public:
 
 private:
     MapModel map_;
+    GridSensorReader sensorReader_;
     ObstacleDetector obstacleDetector_;
     DustDetector dustDetector_;
     RvcController controller_;

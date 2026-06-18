@@ -1,4 +1,5 @@
 #include "rvc/CleaningService.hpp"
+#include "rvc/GridSensorReader.hpp"
 #include "rvc/MapModel.hpp"
 #include "rvc/MovementController.hpp"
 #include "rvc/ObstacleDetector.hpp"
@@ -14,14 +15,22 @@ rvc::MapModel makeMap(int w, int h, rvc::Position start, rvc::Direction heading)
     return map;
 }
 
+struct ObstacleSense {
+    rvc::MapModel& map;
+    rvc::GridSensorReader sensor;
+    rvc::ObstacleDetector obs;
+
+    explicit ObstacleSense(rvc::MapModel& m) : map(m), sensor(m), obs(sensor) {}
+};
+
 }  // namespace
 
 // FR-002
 TEST(MovementControllerTest, MoveForwardWithCleaning_FR002) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::North);
     rvc::CleaningService clean;
-    rvc::ObstacleDetector obs(map);
-    rvc::MovementController move(map, clean, obs);
+    ObstacleSense sense(map);
+    rvc::MovementController move(map, clean, sense.obs);
 
     move.moveForwardWithCleaning();
     EXPECT_EQ(map.rvcPosition(), (rvc::Position{2, 1}));
@@ -33,8 +42,8 @@ TEST(MovementControllerTest, MoveBackward_FR004) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::North);
     rvc::CleaningService clean;
     clean.activateCleaningAndMopping();
-    rvc::ObstacleDetector obs(map);
-    rvc::MovementController move(map, clean, obs);
+    ObstacleSense sense(map);
+    rvc::MovementController move(map, clean, sense.obs);
 
     move.moveBackward();
     EXPECT_EQ(map.rvcPosition(), (rvc::Position{2, 3}));
@@ -45,8 +54,8 @@ TEST(MovementControllerTest, CanTurnRight_FR003_UR001) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::North);
     map.setObstacles({{3, 2}});
     rvc::CleaningService clean;
-    rvc::ObstacleDetector obs(map);
-    rvc::MovementController move(map, clean, obs);
+    ObstacleSense sense(map);
+    rvc::MovementController move(map, clean, sense.obs);
 
     EXPECT_FALSE(move.canTurnRight());
 }
@@ -55,8 +64,8 @@ TEST(MovementControllerTest, CanTurnRight_FR003_UR001) {
 TEST(MovementControllerTest, TurnRight_FR003) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::North);
     rvc::CleaningService clean;
-    rvc::ObstacleDetector obs(map);
-    rvc::MovementController move(map, clean, obs);
+    ObstacleSense sense(map);
+    rvc::MovementController move(map, clean, sense.obs);
 
     move.turnRight();
     EXPECT_EQ(move.heading(), rvc::Direction::East);
@@ -66,8 +75,8 @@ TEST(MovementControllerTest, TurnRight_FR003) {
 TEST(MovementControllerTest, TurnLeft_FR003) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::North);
     rvc::CleaningService clean;
-    rvc::ObstacleDetector obs(map);
-    rvc::MovementController move(map, clean, obs);
+    ObstacleSense sense(map);
+    rvc::MovementController move(map, clean, sense.obs);
 
     move.turnLeft();
     EXPECT_EQ(move.heading(), rvc::Direction::West);
@@ -78,8 +87,8 @@ TEST(MovementControllerTest, ResumeForwardWithCleaning_FR003) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::North);
     rvc::CleaningService clean;
     clean.stopCleaning();
-    rvc::ObstacleDetector obs(map);
-    rvc::MovementController move(map, clean, obs);
+    ObstacleSense sense(map);
+    rvc::MovementController move(map, clean, sense.obs);
 
     move.resumeForwardWithCleaning();
     EXPECT_EQ(map.rvcPosition(), (rvc::Position{2, 1}));
@@ -89,8 +98,8 @@ TEST(MovementControllerTest, ResumeForwardWithCleaning_FR003) {
 // NFR-003
 TEST(MovementControllerTest, ObstacleDetectorInterface_NFR003) {
     auto map = makeMap(5, 5, {2, 2}, rvc::Direction::East);
-    rvc::ObstacleDetector obs(map);
-    EXPECT_TRUE(obs.isRightTurnFeasible());
+    ObstacleSense sense(map);
+    EXPECT_TRUE(sense.obs.isRightTurnFeasible());
     map.setObstacles({{2, 3}});
-    EXPECT_FALSE(obs.isRightTurnFeasible());
+    EXPECT_FALSE(sense.obs.isRightTurnFeasible());
 }

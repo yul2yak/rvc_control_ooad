@@ -17,6 +17,7 @@ endif()
 add_library(rvc_core
     src/rvc/MapModel.cpp
     src/rvc/CleaningService.cpp
+    src/rvc/GridSensorReader.cpp
     src/rvc/MovementController.cpp
     src/rvc/ObstacleDetector.cpp
     src/rvc/DustDetector.cpp
@@ -39,6 +40,7 @@ enable_testing()
 add_executable(rvc_unit_tests
     test/cleaning_service_test.cpp
     test/movement_controller_test.cpp
+    test/obstacle_detector_test.cpp
     test/rvc_controller_test.cpp
     test/simulation_engine_test.cpp
 )
