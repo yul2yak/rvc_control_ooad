@@ -48,15 +48,15 @@ flowchart TB
   UC3 -.->|extend| UC4
 ```
 
-## 5. FR 추적
+## 5. FR · NFR · QAS 추적
 
-| FR | Use Case |
-|----|----------|
-| FR-001 | UC-001 |
-| FR-002 | UC-002 (include) |
-| FR-003 | UC-003 |
-| FR-004 | UC-004 |
-| FR-005 | UC-005 |
+| FR | Use Case | 관련 NFR | QAS |
+|----|----------|----------|-----|
+| FR-001 | UC-001 | NFR-002 | — |
+| FR-002 | UC-002 (include) | NFR-005 | QAS-003 |
+| FR-003 | UC-003 | NFR-003, NFR-006 | QAS-004 |
+| FR-004 | UC-004 | NFR-003, NFR-005, NFR-006 | QAS-003, QAS-005 |
+| FR-005 | UC-005 | NFR-003, NFR-004, NFR-007 | QAS-006 |
 
 ## 6. UC 문서 매핑
 
@@ -67,3 +67,15 @@ flowchart TB
 | UC-003 | `docs/OOA/UseCases/UC-003.md` |
 | UC-004 | `docs/OOA/UseCases/UC-004.md` |
 | UC-005 | `docs/OOA/UseCases/UC-005.md` |
+
+## 7. SSD(시나리오) 요약
+
+| UC | 시나리오 ID | SSD | Actor |
+|----|-------------|-----|-------|
+| UC-001 | S01, S91 | SSD-UC-001-S01, SSD-UC-001-S91 | Operator, Environment |
+| UC-002 | S01 | SSD-UC-002-S01 | _(없음 — include)_ |
+| UC-003 | S01, S02, S91 | SSD-UC-003-S01~S02, S91 | Environment |
+| UC-004 | S01, S02 | SSD-UC-004-S01, S02 | Environment |
+| UC-005 | S01 | SSD-UC-005-S01 | Environment |
+
+**합계:** UC 5 · 시나리오(SSD) 9
