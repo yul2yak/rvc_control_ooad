@@ -1,0 +1,12 @@
+{
+  "id": "ST-007",
+  "name": "Dust boost forward cleaning",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 2, "y": 2, "heading": "N" },
+  "obstacles": [],
+  "dust": [{"x":2,"y":2}],
+  "ticks": 1,
+  "trigger": "dust",
+  "expectedPath": [{"x":2,"y":2},{"x":2,"y":1}]
+}

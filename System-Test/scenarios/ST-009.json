@@ -1,0 +1,12 @@
+{
+  "id": "ST-009",
+  "name": "Start cleaning forward south",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 1, "y": 1, "heading": "S" },
+  "obstacles": [],
+  "dust": [],
+  "ticks": 4,
+  "trigger": "start",
+  "expectedPath": [{"x":1,"y":1},{"x":1,"y":2},{"x":1,"y":3},{"x":1,"y":4},{"x":1,"y":5}]
+}

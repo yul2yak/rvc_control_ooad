@@ -1,0 +1,12 @@
+{
+  "id": "ST-001",
+  "name": "Start cleaning forward north",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 1, "y": 4, "heading": "N" },
+  "obstacles": [],
+  "dust": [],
+  "ticks": 3,
+  "trigger": "start",
+  "expectedPath": [{"x":1,"y":4},{"x":1,"y":3},{"x":1,"y":2},{"x":1,"y":1}]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "ST-024",
+  "name": "Auto forward obstacle turn and continue",
+  "width": 10,
+  "height": 10,
+  "rvc": { "x": 4, "y": 7, "heading": "N" },
+  "obstacles": [{"x":4,"y":4}],
+  "dust": [],
+  "ticks": 4,
+  "trigger": "start",
+  "expectedPath": [{"x":4,"y":7},{"x":4,"y":6},{"x":4,"y":5},{"x":5,"y":5},{"x":6,"y":5}]
+}

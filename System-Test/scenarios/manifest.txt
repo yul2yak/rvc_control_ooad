@@ -1,0 +1,25 @@
+# System-Test scenario manifest (one path per line)
+System-Test/scenarios/ST-001.json
+System-Test/scenarios/ST-002.json
+System-Test/scenarios/ST-003.json
+System-Test/scenarios/ST-004.json
+System-Test/scenarios/ST-005.json
+System-Test/scenarios/ST-006.json
+System-Test/scenarios/ST-007.json
+System-Test/scenarios/ST-008.json
+System-Test/scenarios/ST-009.json
+System-Test/scenarios/ST-010.json
+System-Test/scenarios/ST-011.json
+System-Test/scenarios/ST-012.json
+System-Test/scenarios/ST-013.json
+System-Test/scenarios/ST-014.json
+System-Test/scenarios/ST-015.json
+System-Test/scenarios/ST-016.json
+System-Test/scenarios/ST-017.json
+System-Test/scenarios/ST-018.json
+System-Test/scenarios/ST-019.json
+System-Test/scenarios/ST-020.json
+System-Test/scenarios/ST-021.json
+System-Test/scenarios/ST-022.json
+System-Test/scenarios/ST-023.json
+System-Test/scenarios/ST-024.json

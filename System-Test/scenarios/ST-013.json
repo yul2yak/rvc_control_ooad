@@ -1,0 +1,12 @@
+{
+  "id": "ST-013",
+  "name": "Auto forward then obstacle turn east",
+  "width": 10,
+  "height": 10,
+  "rvc": { "x": 3, "y": 5, "heading": "N" },
+  "obstacles": [{"x":3,"y":3}],
+  "dust": [],
+  "ticks": 3,
+  "trigger": "start",
+  "expectedPath": [{"x":3,"y":5},{"x":3,"y":4},{"x":4,"y":4},{"x":5,"y":4}]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "ST-016",
+  "name": "Obstacle west heading turn right",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 4, "y": 2, "heading": "W" },
+  "obstacles": [{"x":3,"y":2}],
+  "dust": [],
+  "ticks": 1,
+  "trigger": "obstacle",
+  "expectedPath": [{"x":4,"y":2},{"x":4,"y":1}]
+}

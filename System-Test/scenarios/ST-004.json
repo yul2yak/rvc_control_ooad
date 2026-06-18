@@ -1,0 +1,12 @@
+{
+  "id": "ST-004",
+  "name": "Obstacle avoid turn left resume",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 2, "y": 3, "heading": "N" },
+  "obstacles": [{"x":2,"y":2},{"x":3,"y":3}],
+  "dust": [],
+  "ticks": 1,
+  "trigger": "obstacle",
+  "expectedPath": [{"x":2,"y":3},{"x":1,"y":3}]
+}

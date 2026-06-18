@@ -1,0 +1,12 @@
+{
+  "id": "ST-019",
+  "name": "Dust on forward path with start trigger",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 5, "y": 5, "heading": "N" },
+  "obstacles": [],
+  "dust": [{"x":5,"y":5}],
+  "ticks": 1,
+  "trigger": "start",
+  "expectedPath": [{"x":5,"y":5},{"x":5,"y":4}]
+}

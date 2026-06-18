@@ -1,0 +1,12 @@
+{
+  "id": "ST-020",
+  "name": "Long east corridor cleaning",
+  "width": 12,
+  "height": 6,
+  "rvc": { "x": 1, "y": 2, "heading": "E" },
+  "obstacles": [],
+  "dust": [],
+  "ticks": 6,
+  "trigger": "start",
+  "expectedPath": [{"x":1,"y":2},{"x":2,"y":2},{"x":3,"y":2},{"x":4,"y":2},{"x":5,"y":2},{"x":6,"y":2},{"x":7,"y":2}]
+}

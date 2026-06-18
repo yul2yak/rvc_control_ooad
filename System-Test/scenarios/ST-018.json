@@ -1,0 +1,12 @@
+{
+  "id": "ST-018",
+  "name": "Surrounded west heading recovery",
+  "width": 8,
+  "height": 8,
+  "rvc": { "x": 3, "y": 3, "heading": "W" },
+  "obstacles": [{"x":2,"y":3},{"x":3,"y":2},{"x":3,"y":4}],
+  "dust": [],
+  "ticks": 1,
+  "trigger": "surrounded",
+  "expectedPath": [{"x":3,"y":3},{"x":4,"y":3},{"x":4,"y":2}]
+}

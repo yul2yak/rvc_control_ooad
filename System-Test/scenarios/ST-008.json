@@ -1,0 +1,12 @@
+{
+  "id": "ST-008",
+  "name": "Multi-tick auto forward path",
+  "width": 10,
+  "height": 10,
+  "rvc": { "x": 3, "y": 8, "heading": "N" },
+  "obstacles": [],
+  "dust": [],
+  "ticks": 5,
+  "trigger": "start",
+  "expectedPath": [{"x":3,"y":8},{"x":3,"y":7},{"x":3,"y":6},{"x":3,"y":5},{"x":3,"y":4},{"x":3,"y":3}]
+}
