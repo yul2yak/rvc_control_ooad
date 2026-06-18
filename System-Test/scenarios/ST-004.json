@@ -3,10 +3,13 @@
   "name": "Obstacle avoid turn left resume",
   "width": 8,
   "height": 8,
-  "rvc": { "x": 2, "y": 3, "heading": "N" },
-  "obstacles": [{"x":2,"y":2},{"x":3,"y":3}],
+  "rvc": { "x": 3, "y": 5, "heading": "N" },
+  "obstacles": [
+    {"x":0,"y":0}, {"x":7,"y":0}, {"x":0,"y":7}, {"x":7,"y":7},
+    {"x":3,"y":4}, {"x":4,"y":5}
+  ],
   "dust": [],
-  "ticks": 1,
+  "ticks": 3,
   "trigger": "obstacle",
-  "expectedPath": [{"x":2,"y":3},{"x":1,"y":3}]
+  "expectedPath": [{"x":3,"y":5},{"x":2,"y":5}]
 }

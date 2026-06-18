@@ -3,10 +3,13 @@
   "name": "Surrounded backward turn right resume",
   "width": 8,
   "height": 8,
-  "rvc": { "x": 2, "y": 2, "heading": "N" },
-  "obstacles": [{"x":2,"y":1},{"x":1,"y":2},{"x":3,"y":2}],
+  "rvc": { "x": 4, "y": 4, "heading": "N" },
+  "obstacles": [
+    {"x":0,"y":3}, {"x":0,"y":4}, {"x":7,"y":3}, {"x":7,"y":4},
+    {"x":4,"y":3}, {"x":3,"y":4}, {"x":5,"y":4}
+  ],
   "dust": [],
-  "ticks": 1,
+  "ticks": 4,
   "trigger": "surrounded",
-  "expectedPath": [{"x":2,"y":2},{"x":2,"y":3},{"x":3,"y":3}]
+  "expectedPath": [{"x":4,"y":4},{"x":4,"y":5},{"x":5,"y":5}]
 }

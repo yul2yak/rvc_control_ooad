@@ -52,6 +52,16 @@ int main(int argc, char* argv[]) {
         if (!engine.pathMatchesExpected()) {
             ++failed;
             failures.push_back(scenario.id + " path mismatch");
+            std::cerr << scenario.id << " actual: [";
+            bool first = true;
+            for (const auto& p : engine.map().path()) {
+                if (!first) {
+                    std::cerr << ", ";
+                }
+                std::cerr << "{" << p.x << "," << p.y << "}";
+                first = false;
+            }
+            std::cerr << "]\n";
             continue;
         }
         ++passed;

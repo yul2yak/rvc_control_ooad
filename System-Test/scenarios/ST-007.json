@@ -1,12 +1,18 @@
 {
   "id": "ST-007",
-  "name": "Dust boost forward cleaning",
-  "width": 8,
-  "height": 8,
-  "rvc": { "x": 2, "y": 2, "heading": "N" },
-  "obstacles": [],
-  "dust": [{"x":2,"y":2}],
-  "ticks": 1,
-  "trigger": "dust",
-  "expectedPath": [{"x":2,"y":2},{"x":2,"y":1}]
+  "name": "Auto forward then obstacle turn east",
+  "width": 10,
+  "height": 10,
+  "rvc": { "x": 3, "y": 7, "heading": "N" },
+  "obstacles": [
+    {"x":1,"y":2}, {"x":2,"y":2}, {"x":3,"y":2},
+    {"x":7,"y":1}, {"x":8,"y":1},
+    {"x":1,"y":8}, {"x":2,"y":8},
+    {"x":8,"y":7}, {"x":8,"y":8}, {"x":9,"y":8},
+    {"x":3,"y":4}
+  ],
+  "dust": [],
+  "ticks": 5,
+  "trigger": "start",
+  "expectedPath": [{"x":3,"y":7},{"x":3,"y":6},{"x":3,"y":5},{"x":4,"y":5}]
 }

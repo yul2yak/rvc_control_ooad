@@ -1,12 +1,17 @@
 {
   "id": "ST-001",
-  "name": "Start cleaning forward north",
-  "width": 8,
-  "height": 8,
-  "rvc": { "x": 1, "y": 4, "heading": "N" },
-  "obstacles": [],
+  "name": "Start forward north in apartment hallway",
+  "width": 10,
+  "height": 10,
+  "rvc": { "x": 5, "y": 7, "heading": "N" },
+  "obstacles": [
+    {"x":1,"y":2}, {"x":2,"y":2}, {"x":3,"y":2},
+    {"x":7,"y":1}, {"x":8,"y":1},
+    {"x":1,"y":8}, {"x":2,"y":8},
+    {"x":8,"y":7}, {"x":8,"y":8}, {"x":9,"y":8}
+  ],
   "dust": [],
   "ticks": 3,
   "trigger": "start",
-  "expectedPath": [{"x":1,"y":4},{"x":1,"y":3},{"x":1,"y":2},{"x":1,"y":1}]
+  "expectedPath": [{"x":5,"y":7},{"x":5,"y":6},{"x":5,"y":5},{"x":5,"y":4}]
 }

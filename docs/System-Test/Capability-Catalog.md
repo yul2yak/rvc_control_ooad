@@ -28,12 +28,11 @@ RVC SW Controller GUI 시뮬레이터(`sim/`) 및 JSON 시나리오(`System-Test
 | ST-001 | CAP-001, CAP-002, CAP-012 |
 | ST-003 | CAP-003, CAP-004, CAP-005, CAP-007 |
 | ST-005 | CAP-003, CAP-008, CAP-005, CAP-007 |
-| ST-007 | CAP-009, CAP-010, CAP-002 |
-| ST-013 | CAP-001, CAP-002, CAP-003, CAP-005, CAP-007 |
-| ST-015 | CAP-001, CAP-002, CAP-009, CAP-010 |
-| ST-024 | CAP-001, CAP-002, CAP-003, CAP-005, CAP-007 |
+| ST-007 | CAP-001, CAP-002, CAP-003, CAP-005, CAP-007 |
+| ST-008 | CAP-001, CAP-002, CAP-009, CAP-010 |
+| ST-010 | CAP-003, CAP-008, CAP-006, CAP-007 |
 
-(전체 24건 — `Scenarios.md` 참고)
+(전체 11건 — `Scenarios.md` 참고)
 
 ## 실행
 

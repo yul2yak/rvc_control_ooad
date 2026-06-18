@@ -45,11 +45,11 @@ TEST(SimulationEngineTest, SurroundedTrigger_FR004) {
     scenario.rvcHeading = rvc::Direction::North;
     scenario.obstacles = {{2, 1}, {1, 2}, {3, 2}};
     scenario.trigger = "surrounded";
-    scenario.ticks = 1;
+    scenario.ticks = 4;
 
     rvc::SimulationEngine engine;
     engine.loadScenario(scenario);
-    engine.runTicks(1);
+    engine.runTicks(4);
     EXPECT_EQ(engine.map().rvcPosition(), (rvc::Position{3, 3}));
 }
 

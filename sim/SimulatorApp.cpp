@@ -4,7 +4,15 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <sstream>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 const float SimulatorApp::kAutoTickIntervalSec = 0.5f;
 
@@ -29,6 +37,72 @@ sf::String toSfString(const std::string& utf8) {
 void setUtf8Text(sf::Text& text, const std::string& utf8) {
     text.setString(toSfString(utf8));
 }
+
+std::string movementKindLabel(rvc::MovementKind kind) {
+    switch (kind) {
+        case rvc::MovementKind::Forward:
+            return "Forward";
+        case rvc::MovementKind::Backward:
+            return "Backward";
+        case rvc::MovementKind::Turning:
+            return "Turning";
+        case rvc::MovementKind::Idle:
+        default:
+            return "Idle";
+    }
+}
+
+std::string formatPositions(const std::vector<rvc::Position>& list) {
+    if (list.empty()) {
+        return "[]";
+    }
+    std::ostringstream ss;
+    ss << "[";
+    for (std::size_t i = 0; i < list.size(); ++i) {
+        if (i > 0) {
+            ss << ",";
+        }
+        ss << "(" << list[i].x << "," << list[i].y << ")";
+    }
+    ss << "]";
+    return ss.str();
+}
+
+#ifdef _WIN32
+bool copyUtf8ToClipboard(const std::string& utf8) {
+    if (utf8.empty()) {
+        return false;
+    }
+    const int wlen =
+        MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), static_cast<int>(utf8.size()), nullptr, 0);
+    if (wlen <= 0) {
+        return false;
+    }
+    HGLOBAL mem = GlobalAlloc(GMEM_MOVEABLE, static_cast<SIZE_T>((wlen + 1) * sizeof(wchar_t)));
+    if (!mem) {
+        return false;
+    }
+    auto* wide = static_cast<wchar_t*>(GlobalLock(mem));
+    if (!wide) {
+        GlobalFree(mem);
+        return false;
+    }
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), static_cast<int>(utf8.size()), wide, wlen);
+    wide[wlen] = L'\0';
+    GlobalUnlock(mem);
+    if (!OpenClipboard(nullptr)) {
+        GlobalFree(mem);
+        return false;
+    }
+    EmptyClipboard();
+    const bool ok = SetClipboardData(CF_UNICODETEXT, mem) != nullptr;
+    CloseClipboard();
+    if (!ok) {
+        GlobalFree(mem);
+    }
+    return ok;
+}
+#endif
 
 }  // namespace
 
@@ -67,7 +141,7 @@ void SimulatorApp::relayoutPanel() {
     langButtonBounds_ = sf::FloatRect(x, langY, w, 24.f);
     helpStartY_ = langY + 24.f + 8.f;
 
-    const float helpLines = 6.f;
+    const float helpLines = 7.f;
     const float helpHeight = 18.f + helpLines * kHelpRow;
     scenarioStartY_ = helpStartY_ + helpHeight + 10.f;
     buttonsStartY_ = scenarioStartY_ + 38.f;
@@ -188,10 +262,14 @@ void SimulatorApp::resetDefaultScenario() {
     scenario_.ticks = 1;
     scenario_.trigger = "start";
     scenario_.expectedPath.clear();
+    mapDebugLabel_ = "SIM-DEFAULT";
+    loadedScenarioPath_.clear();
     engine_.loadScenario(scenario_);
     tickCount_ = 0;
     autoPlayMode_ = false;
     editMode_ = false;
+    clearDebugLog();
+    appendDebugHeader();
     updateStatusFromSnapshot();
 }
 
@@ -281,6 +359,7 @@ void SimulatorApp::handleGridClick(int gridX, int gridY) {
     }
     scenario_.rvcStart = engine_.map().rvcPosition();
     scenario_.rvcHeading = engine_.map().rvcHeading();
+    mapDebugLabel_ = "custom";
     engine_.reloadLayout(scenario_);
 }
 
@@ -288,8 +367,12 @@ void SimulatorApp::loadScenarioFile(const std::string& path) {
     rvc::MapScenario loaded;
     if (rvc::loadScenarioFromFile(path, loaded)) {
         scenario_ = loaded;
+        mapDebugLabel_ = loaded.id;
+        loadedScenarioPath_ = path;
         engine_.loadScenario(scenario_);
         tickCount_ = 0;
+        clearDebugLog();
+        appendDebugHeader();
         statusMessage_ = std::string(tr("로드: ", "Loaded: ")) + path;
     } else {
         statusMessage_ = std::string(tr("로드 실패: ", "Load failed: ")) + path;
@@ -300,22 +383,143 @@ void SimulatorApp::saveScenarioFile(const std::string& path) {
     scenario_.rvcStart = engine_.map().rvcPosition();
     scenario_.rvcHeading = engine_.map().rvcHeading();
     if (rvc::saveScenarioToFile(path, scenario_)) {
+        mapDebugLabel_ = "custom";
+        loadedScenarioPath_ = path;
         statusMessage_ = std::string(tr("저장: ", "Saved: ")) + path;
     } else {
         statusMessage_ = std::string(tr("저장 실패: ", "Save failed: ")) + path;
     }
 }
 
+void SimulatorApp::clearDebugLog() {
+    debugLog_.clear();
+}
+
+void SimulatorApp::appendDebugHeader() {
+    const rvc::RvcSnapshot snap = engine_.controller().snapshot();
+    auto pushLine = [this](const std::string& line) {
+        debugLog_.push_back(line);
+        std::cout << line << std::endl;
+    };
+
+    pushLine("=== RVC debug log ===");
+
+    std::ostringstream ss;
+    ss << "map=" << mapDebugLabel_;
+    if (!scenario_.name.empty() && mapDebugLabel_ != "custom" &&
+        mapDebugLabel_ != "SIM-DEFAULT") {
+        ss << " (" << scenario_.name << ")";
+    }
+    pushLine(ss.str());
+
+    if (!loadedScenarioPath_.empty()) {
+        pushLine(std::string("file=") + loadedScenarioPath_);
+    }
+
+    ss.str("");
+    ss << "trigger=" << scenario_.trigger << " ticks=" << scenario_.ticks << " size="
+       << scenario_.width << "x" << scenario_.height;
+    pushLine(ss.str());
+
+    ss.str("");
+    ss << "start pos=(" << snap.position.x << "," << snap.position.y << ") heading="
+       << rvc::directionToString(snap.heading) << " session="
+       << (engine_.isSessionActive() ? 1 : 0);
+    pushLine(ss.str());
+
+    pushLine(std::string("obstacles=") + formatPositions(scenario_.obstacles));
+    pushLine(std::string("dust=") + formatPositions(scenario_.dust));
+
+    if (!scenario_.expectedPath.empty()) {
+        pushLine(std::string("expectedPath=") + formatPositions(scenario_.expectedPath));
+    }
+
+    pushLine("--- ticks (copy below) ---");
+}
+
+void SimulatorApp::appendTickLogLine() {
+    const rvc::RvcSnapshot snap = engine_.controller().snapshot();
+    const rvc::MapModel& map = engine_.map();
+    const char* clean = snap.cleaningActive ? "1" : "0";
+    const char* mop = snap.moppingActive ? "1" : "0";
+    const char* boost = snap.level == rvc::OutputLevel::Boosted ? "1" : "0";
+
+    std::ostringstream ss;
+    ss << "tick=" << tickCount_ << " move=" << movementKindLabel(snap.movementKind) << " pos=("
+       << snap.position.x << "," << snap.position.y << ")"
+       << " dir=" << rvc::directionToString(snap.heading) << " clean=" << clean << " mop=" << mop
+       << " boost=" << boost;
+    if (snap.boostRemainingSec > 0) {
+        ss << "(" << snap.boostRemainingSec << "s)";
+    }
+    ss << " session=" << (engine_.isSessionActive() ? 1 : 0)
+       << " maneuver=" << (engine_.controller().maneuverInProgress() ? 1 : 0)
+       << " front_blk=" << (map.isFrontBlocked() ? 1 : 0)
+       << " surrounded=" << (map.isSurrounded() ? 1 : 0);
+
+    const auto& path = map.path();
+    if (!path.empty()) {
+        ss << " path_len=" << path.size();
+    }
+
+    debugLog_.push_back(ss.str());
+    std::cout << debugLog_.back() << std::endl;
+}
+
+std::string SimulatorApp::buildDebugLogText() const {
+    std::ostringstream ss;
+    for (std::size_t i = 0; i < debugLog_.size(); ++i) {
+        if (i > 0) {
+            ss << '\n';
+        }
+        ss << debugLog_[i];
+    }
+    return ss.str();
+}
+
+void SimulatorApp::copyDebugLogToClipboard() {
+    const std::string text = buildDebugLogText();
+    if (text.empty()) {
+        statusMessage_ = tr("복사할 로그 없음", "No log to copy");
+        return;
+    }
+#ifdef _WIN32
+    if (copyUtf8ToClipboard(text)) {
+        statusMessage_ = tr("디버그 로그 클립보드 복사됨 (", "Debug log copied (") +
+                           std::to_string(debugLog_.size()) + tr("줄)", " lines)");
+    } else {
+        statusMessage_ = tr("클립보드 복사 실패", "Clipboard copy failed");
+    }
+#else
+    statusMessage_ = tr("클립보드 미지원 — F6으로 저장", "Clipboard unsupported — use F6 export");
+#endif
+}
+
+void SimulatorApp::exportDebugLogToFile() {
+    const std::string path = "System-Test/scenarios/debug_log.txt";
+    std::ofstream out(path, std::ios::binary);
+    if (!out) {
+        statusMessage_ = std::string(tr("저장 실패: ", "Save failed: ")) + path;
+        return;
+    }
+    const std::string text = buildDebugLogText();
+    out.write(text.data(), static_cast<std::streamsize>(text.size()));
+    out.put('\n');
+    statusMessage_ = std::string(tr("디버그 로그 저장: ", "Debug log saved: ")) + path;
+}
+
 void SimulatorApp::doSingleTick() {
     engine_.tickOnce();
     ++tickCount_;
+    appendTickLogLine();
     updateStatusFromSnapshot();
 }
 
 void SimulatorApp::runTicks(int n) {
-    engine_.runTicks(n);
-    tickCount_ += n;
-    updateStatusFromSnapshot();
+    const int count = n > 0 ? n : 1;
+    for (int i = 0; i < count; ++i) {
+        doSingleTick();
+    }
 }
 
 void SimulatorApp::updateStatusFromSnapshot() {
@@ -337,6 +541,8 @@ void SimulatorApp::updateStatusFromSnapshot() {
                                                      : tr("먼지", "dust"))
            << "]";
     }
+    ss << tr("  | 로그 ", "  | log ") << debugLog_.size() << tr("줄 C복사 F6저장",
+                                                                 " lines C=copy F6=save");
     statusMessage_ = ss.str();
 }
 
@@ -387,6 +593,12 @@ void SimulatorApp::activateButton(SimulatorApp::SimAction id) {
         case SimAction::Reset:
             resetDefaultScenario();
             break;
+        case SimAction::CopyLog:
+            copyDebugLogToClipboard();
+            break;
+        case SimAction::ExportLog:
+            exportDebugLogToFile();
+            break;
         case SimAction::ToggleLanguage:
             toggleLanguage();
             break;
@@ -436,6 +648,12 @@ void SimulatorApp::handleEvent(const sf::Event& event) {
                 break;
             case sf::Keyboard::N:
                 activateButton(SimAction::Reset);
+                break;
+            case sf::Keyboard::C:
+                activateButton(SimAction::CopyLog);
+                break;
+            case sf::Keyboard::F6:
+                activateButton(SimAction::ExportLog);
                 break;
             case sf::Keyboard::H:
                 toggleLanguage();
@@ -659,6 +877,9 @@ void SimulatorApp::drawHelpText() {
                  sf::Color(170, 170, 180));
     y += kHelpRow;
     drawTextLine(tr("F5 저장  N 리셋  H 언어", "F5 Save  N Reset  H Lang"), x, y, 11,
+                 sf::Color(170, 170, 180));
+    y += kHelpRow;
+    drawTextLine(tr("C 로그 복사  F6 로그 저장", "C Copy log  F6 Save log"), x, y, 11,
                  sf::Color(170, 170, 180));
     y += kHelpRow;
     drawTextLine(tr("편집: 그리드 셀 클릭", "Edit: click grid cell"), x, y, 11,

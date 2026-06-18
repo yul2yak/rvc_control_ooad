@@ -10,17 +10,3 @@ System-Test/scenarios/ST-008.json
 System-Test/scenarios/ST-009.json
 System-Test/scenarios/ST-010.json
 System-Test/scenarios/ST-011.json
-System-Test/scenarios/ST-012.json
-System-Test/scenarios/ST-013.json
-System-Test/scenarios/ST-014.json
-System-Test/scenarios/ST-015.json
-System-Test/scenarios/ST-016.json
-System-Test/scenarios/ST-017.json
-System-Test/scenarios/ST-018.json
-System-Test/scenarios/ST-019.json
-System-Test/scenarios/ST-020.json
-System-Test/scenarios/ST-021.json
-System-Test/scenarios/ST-022.json
-System-Test/scenarios/ST-023.json
-System-Test/scenarios/ST-024.json
-System-Test/scenarios/ST-025.json

@@ -27,7 +27,9 @@ private:
         ScenarioNext,
         Save,
         Reset,
-        ToggleLanguage
+        ToggleLanguage,
+        CopyLog,
+        ExportLog
     };
 
     struct UiButton {
@@ -56,6 +58,9 @@ private:
     std::vector<std::string> scenarioFiles_;
     int scenarioIndex_ = 0;
     std::string selectedScenarioLabel_;
+    std::string mapDebugLabel_;
+    std::string loadedScenarioPath_;
+    std::vector<std::string> debugLog_;
     bool englishUi_ = false;
     sf::FloatRect langButtonBounds_;
     float legendStartY_ = 12.f;
@@ -99,5 +104,11 @@ private:
     void runTicks(int n);
     void doSingleTick();
     void updateStatusFromSnapshot();
+    void clearDebugLog();
+    void appendDebugHeader();
+    void appendTickLogLine();
+    std::string buildDebugLogText() const;
+    void copyDebugLogToClipboard();
+    void exportDebugLogToFile();
     bool loadFont();
 };

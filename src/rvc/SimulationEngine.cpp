@@ -54,12 +54,14 @@ void SimulationEngine::triggerStart() {
 
 void SimulationEngine::triggerObstacle() {
     sessionActive_ = true;
-    controller_.handleObstacleDetected();
+    controller_.beginObstacleAvoidance();
+    controller_.stepManeuver();
 }
 
 void SimulationEngine::triggerSurrounded() {
     sessionActive_ = true;
-    controller_.handleSurroundedObstacle();
+    controller_.beginSurroundedAvoidance();
+    controller_.stepManeuver();
 }
 
 void SimulationEngine::triggerDust() {

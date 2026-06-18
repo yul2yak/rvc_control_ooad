@@ -1,12 +1,18 @@
 {
   "id": "ST-010",
-  "name": "Start cleaning forward west",
-  "width": 8,
-  "height": 8,
-  "rvc": { "x": 5, "y": 1, "heading": "W" },
-  "obstacles": [],
+  "name": "Auto tick when L/R/F blocked must rotate",
+  "width": 10,
+  "height": 10,
+  "rvc": { "x": 5, "y": 5, "heading": "N" },
+  "obstacles": [
+    {"x":1,"y":2}, {"x":2,"y":2}, {"x":3,"y":2},
+    {"x":7,"y":1}, {"x":8,"y":1},
+    {"x":1,"y":8}, {"x":2,"y":8},
+    {"x":8,"y":7}, {"x":8,"y":8}, {"x":9,"y":8},
+    {"x":5,"y":4}, {"x":4,"y":5}, {"x":6,"y":5}
+  ],
   "dust": [],
-  "ticks": 3,
+  "ticks": 5,
   "trigger": "start",
-  "expectedPath": [{"x":5,"y":1},{"x":4,"y":1},{"x":3,"y":1},{"x":2,"y":1}]
+  "expectedPath": [{"x":5,"y":5},{"x":5,"y":6},{"x":6,"y":6},{"x":7,"y":6}]
 }

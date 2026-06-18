@@ -1,12 +1,17 @@
 {
   "id": "ST-008",
-  "name": "Multi-tick auto forward path",
+  "name": "Auto path with dust boost mid-run",
   "width": 10,
   "height": 10,
-  "rvc": { "x": 3, "y": 8, "heading": "N" },
-  "obstacles": [],
-  "dust": [],
-  "ticks": 5,
+  "rvc": { "x": 4, "y": 8, "heading": "N" },
+  "obstacles": [
+    {"x":1,"y":2}, {"x":2,"y":2}, {"x":3,"y":2},
+    {"x":7,"y":1}, {"x":8,"y":1},
+    {"x":1,"y":8}, {"x":2,"y":8},
+    {"x":8,"y":7}, {"x":8,"y":8}, {"x":9,"y":8}
+  ],
+  "dust": [{"x":4,"y":5}],
+  "ticks": 4,
   "trigger": "start",
-  "expectedPath": [{"x":3,"y":8},{"x":3,"y":7},{"x":3,"y":6},{"x":3,"y":5},{"x":3,"y":4},{"x":3,"y":3}]
+  "expectedPath": [{"x":4,"y":8},{"x":4,"y":7},{"x":4,"y":6},{"x":4,"y":5},{"x":4,"y":4}]
 }
