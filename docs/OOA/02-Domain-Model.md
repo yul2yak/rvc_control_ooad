@@ -5,10 +5,12 @@
 | 문서 | 경로 |
 |------|------|
 | System Requirements | `docs/OOA/01-System-Requirements.md` |
-| UC-001 Automatic Forward Cleaning | `docs/OOA/UseCases/UC-001.md` |
-| UC-002 Avoid Obstacle | `docs/OOA/UseCases/UC-002.md` |
-| UC-003 Surrounded Obstacle Recovery | `docs/OOA/UseCases/UC-003.md` |
-| UC-004 Dust Boost Cleaning | `docs/OOA/UseCases/UC-004.md` |
+| Use Case Diagram | `docs/OOA/00-UseCase-Diagram.md` |
+| UC-001 Start Automatic Cleaning | `docs/OOA/UseCases/UC-001.md` |
+| UC-002 Move Forward While Cleaning | `docs/OOA/UseCases/UC-002.md` |
+| UC-003 Avoid Obstacle | `docs/OOA/UseCases/UC-003.md` |
+| UC-004 Recover When Surrounded | `docs/OOA/UseCases/UC-004.md` |
+| UC-005 Boost Cleaning For Dust | `docs/OOA/UseCases/UC-005.md` |
 
 ## 2. 요약
 
@@ -33,19 +35,19 @@
 | FR-001, UC-001 | RVC / robot vacuum | RVC | ✅ | 물리적 주체 |
 | FR-001 | household surface | HouseholdSurface | ✅ | 청소 대상 |
 | FR-001 | cleaning, mopping | CleaningOutput, RVC | ✅ | 출력→CleaningOutput; 활성→RVC |
-| FR-002, §0.4 | forward, straight | RVC.movementKind | ✅ | RVC 속성 |
-| FR-003–004, UC-002–003 | obstacle | Obstacle | ✅ | |
-| FR-003–004 | turn right / left | RVC.heading | ✅ | 방향 속성; `canTurnRight`는 Obstacle.blocksRight에서 도출 |
+| FR-002, §0.4, UC-002 | forward, straight | RVC.movementKind | ✅ | include — Operator 이벤트 없음 |
+| FR-003–004, UC-003–004 | obstacle | Obstacle | ✅ | |
+| FR-003–004 | turn right / left | RVC.heading | ✅ | `canTurnRight`는 Obstacle.blocksRight에서 도출 |
 | FR-004 | front, left, right (blocked) | Obstacle.blocks* | ✅ | |
 | FR-004 | backward | RVC.movementKind | ✅ | |
-| FR-005, UC-004 | dust | Dust | ✅ | |
+| FR-005, UC-005 | dust | Dust | ✅ | |
 | FR-005, UR-003 | cleaning power / output | CleaningOutput | ✅ | |
 | FR-005, NFR-004 | 3 seconds, duration | CleaningOutput.boostDurationSec | ✅ | |
-| UC-001–004 | Operator | — | ❌ | Actor |
-| UC-002–004 | Environment | — | ❌ | Actor |
+| UC-001 | Operator | — | ❌ | Actor |
+| UC-003–005 | Environment | — | ❌ | Actor |
 | UC·SSD | System, sensor | — | ❌ | SuD·HW 추상화 대상 |
 | — | Grid | — | ❌ | 현재 FR·UC 출처 없음 |
-| UC-001 | automatic cleaning session | RVC.cleaningActive | ✅ | 별도 Session 클래스 대신 RVC 상태 |
+| UC-001 | automatic cleaning session | RVC.cleaningActive | ✅ | Operator는 **시작**만; 세션 상태는 RVC |
 
 ---
 
@@ -53,11 +55,11 @@
 
 | 클래스 | 설명 | 속성 | 관련 UC/FR |
 |--------|------|------|------------|
-| **RVC** | 가정용 로봇 청소기. 표면 위에서 이동하며 청소·물걸레를 수행한다. | `heading: Direction` · `movementKind: Forward \| Backward \| Turning \| Stopped` · `cleaningActive: Boolean` · `moppingActive: Boolean` | UC-001–004 · FR-001–004 · §0.4 |
+| **RVC** | 가정용 로봇 청소기. 표면 위에서 이동하며 청소·물걸레를 수행한다. | `heading: Direction` · `movementKind: Forward \| Backward \| Turning \| Stopped` · `cleaningActive: Boolean` · `moppingActive: Boolean` | UC-001–005 · FR-001–005 · §0.4 |
 | **HouseholdSurface** | RVC가 청소·물걸레하는 가정용 표면. | _(위치·크기는 현 FR 범위 밖 — 속성 없음)_ | UC-001 · FR-001 |
-| **Obstacle** | RVC 진로 또는 회피 방향을 막는 장애물. | `blocksFront: Boolean` · `blocksLeft: Boolean` · `blocksRight: Boolean` | UC-002, UC-003 · FR-003, FR-004 · UR-001 |
-| **Dust** | RVC가 감지하는 먼지. 청소 출력 강화를 유발한다. | _(농도 등은 현 FR 미명시 — 속성 없음)_ | UC-004 · FR-005 |
-| **CleaningOutput** | 청소·물걸레 출력 수준. | `level: Normal \| Boosted` · `boostDurationSec: Integer` (기본 3, NFR-004) | UC-001, UC-004 · FR-001, FR-005 · UR-003, NFR-004 |
+| **Obstacle** | RVC 진로 또는 회피 방향을 막는 장애물. | `blocksFront: Boolean` · `blocksLeft: Boolean` · `blocksRight: Boolean` | UC-003, UC-004 · FR-003, FR-004 · UR-001 |
+| **Dust** | RVC가 감지하는 먼지. 청소 출력 강화를 유발한다. | _(농도 등은 현 FR 미명시 — 속성 없음)_ | UC-005 · FR-005 |
+| **CleaningOutput** | 청소·물걸레 출력 수준. | `level: Normal \| Boosted` · `boostDurationSec: Integer` (기본 3, NFR-004) | UC-001, UC-005 · FR-001, FR-005 · UR-003, NFR-004 |
 
 **Direction (값 개념, RVC.heading 타입):** RVC가 향하는 방향. 회피 시 좌·우 전환과 직진 전진에 사용된다.
 
@@ -68,8 +70,8 @@
 | 연관 | 끝1 | 다중성1 | 끝2 | 다중성2 | 설명 |
 |------|-----|---------|-----|---------|------|
 | navigates | RVC | 1 | HouseholdSurface | 1 | RVC가 표면 위에서 청소·이동 (FR-001) |
-| presents | HouseholdSurface | 1 | Obstacle | 0..* | 표면(환경)에 장애물 존재 (UC-002, UC-003) |
-| presents | HouseholdSurface | 1 | Dust | 0..* | 표면에 먼지 존재 (UC-004) |
+| presents | HouseholdSurface | 1 | Obstacle | 0..* | 표면(환경)에 장애물 존재 (UC-003, UC-004) |
+| presents | HouseholdSurface | 1 | Dust | 0..* | 표면에 먼지 존재 (UC-005) |
 | encounters | RVC | 1 | Obstacle | 0..* | 이동 중 장애물 감지·회피 (FR-003, FR-004) |
 | hasOutput | RVC | 1 | CleaningOutput | 1 | RVC의 청소·물걸레 출력 (FR-001, FR-005) |
 
@@ -118,9 +120,10 @@ RVC "1" *-- "1" CleaningOutput : hasOutput
 | FR-005 | Dust, CleaningOutput (level=Boosted, boostDurationSec) |
 | NFR-004 | CleaningOutput.boostDurationSec |
 | UC-001 | RVC, HouseholdSurface, CleaningOutput |
-| UC-002 | RVC, Obstacle, CleaningOutput |
+| UC-002 | RVC, CleaningOutput |
 | UC-003 | RVC, Obstacle, CleaningOutput |
-| UC-004 | RVC, Dust, CleaningOutput |
+| UC-004 | RVC, Obstacle, CleaningOutput |
+| UC-005 | RVC, Dust, CleaningOutput |
 
 ---
 
@@ -128,4 +131,5 @@ RVC "1" *-- "1" CleaningOutput : hasOutput
 
 - `canTurnRight()` (SSD)는 도메인에서 **Obstacle.blocksRight == false** (및 전방 회피 맥락)로 해석 가능.
 - §0.4 invariant: `movementKind ∈ {Backward, Turning}` → `cleaningActive = false`; `Forward` → 청소 재개.
-- Grid·좌표계는 현 FR 범위 밖; OOI 시뮬레이터 map은 **표현(representation gap)** 으로 OOD에서 도입.
+- Operator **start**만 SSD Actor 이벤트; **moveForwardWithCleaning**은 UC-002 include system operation.
+- Grid·좌표계는 현 FR 범위 밖; OOI 시뮬레이터 map은 **representation gap**으로 OOD에서 도입.

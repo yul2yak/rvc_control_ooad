@@ -9,7 +9,7 @@ description: >-
 
 **Use Case·SSD**와 **FR·NFR**을 근거로 **Domain Model**(개념 모델)을 작성한다. 임의로 개념 추가 금지.
 
-**입력(필수):** `docs/OOA/UseCases/UC-*.md` · `docs/OOA/01-System-Requirements.md` (없으면 중단)
+**입력(필수):** `docs/OOA/00-UseCase-Diagram.md` · `docs/OOA/UseCases/UC-*.md` · `docs/OOA/01-System-Requirements.md` (없으면 중단)
 
 **산출:** `docs/OOA/02-Domain-Model.md`
 
