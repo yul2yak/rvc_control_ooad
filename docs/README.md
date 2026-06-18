@@ -8,13 +8,16 @@ UP Inception → OOA → OOD → OOI 파이프라인과 Cursor skills/rules 대�
 flowchart TD
   PR[docs/Preliminary-Requirements.md] --> Plan[Plan-01 skill]
   Plan --> SR[docs/OOA/01-System-Requirements.md]
-  SR --> UC[OOA-01 skill]
+  SR --> QA[OOA-01 skill]
+  QA --> QASdoc[docs/OOA/03-Quality-Attribute-Scenarios.md]
+  SR --> UC[OOA-02 skill]
   UC --> UCD[docs/OOA/00-UseCase-Diagram.md]
   UCD --> UCs[docs/OOA/UseCases/UC-*.md]
-  UCs --> DM[OOA-02 skill]
+  UCs --> DM[OOA-03 skill]
   DM --> DMdoc[docs/OOA/02-Domain-Model.md]
   UCs --> OOD[OOD-01 skill]
   DMdoc --> OOD
+  QASdoc --> OOD
   OOD --> SD[docs/OOD/SD/SD-UC-*-S*.md]
   OOD --> DCD[docs/OOD/DCD/DCD.md]
   OOD --> TM[docs/OOD/Traceability-Matrix.md]
@@ -37,10 +40,11 @@ docs/
 ├── README.md                        # 이 문서
 ├── OOA/
 │   ├── 01-System-Requirements.md    # Plan-01 산출 · FR/NFR
-│   ├── 00-UseCase-Diagram.md        # OOA-01 산출 · Actor·UC·include/extend
-│   ├── 02-Domain-Model.md           # OOA-02 산출 · 개념 모델
+│   ├── 03-Quality-Attribute-Scenarios.md  # OOA-01 산출 · QA·QAS
+│   ├── 00-UseCase-Diagram.md        # OOA-02 산출 · Actor·UC·include/extend
+│   ├── 02-Domain-Model.md           # OOA-03 산출 · 개념 모델
 │   └── UseCases/
-│       ├── UC-001.md … UC-005.md    # OOA-01 · UC + SSD(내장)
+│       ├── UC-001.md … UC-005.md    # OOA-02 · UC + SSD(내장)
 ├── OOD/
 │   ├── SD/
 │   │   └── SD-UC-###-S##.md         # OOD-01 산출 · 내부 협력
@@ -63,14 +67,16 @@ CMakeLists.txt
 | 단계 | Skill | 주요 산출 | Rule |
 |------|-------|-----------|------|
 | Plan | `Plan-01-System-Requirements` | `01-System-Requirements.md` | — |
-| OOA | `OOA-01-UseCases` | `00-UseCase-Diagram.md`, `UseCases/UC-*.md` | — |
-| OOA | `OOA-02-Domain-Model` | `02-Domain-Model.md` | — |
+| OOA | `OOA-01-Quality-Attribute-Scenarios` | `03-Quality-Attribute-Scenarios.md` | — |
+| OOA | `OOA-02-UseCases` | `00-UseCase-Diagram.md`, `UseCases/UC-*.md` | — |
+| OOA | `OOA-03-Domain-Model` | `02-Domain-Model.md` | — |
 | OOD | `OOD-01-Sequence-Class` | `SD/`, `DCD/`, `Traceability-Matrix.md` | — |
 | OOI | `OOI-01-Implementation` | `include/`, `src/`, `test/`, `sim/` | `cpp-impl`, `testing`, `gtest-framework` |
 
 ## 경로 규칙 (통일)
 
 - System Requirements: **`docs/OOA/01-System-Requirements.md`** (Plan·OOA·OOD·OOI 공통)
+- Quality Attribute Scenarios: **`docs/OOA/03-Quality-Attribute-Scenarios.md`**
 - Domain Model: **`docs/OOA/02-Domain-Model.md`**
 - Use Case Diagram: **`docs/OOA/00-UseCase-Diagram.md`**
 - Use Case·SSD: **`docs/OOA/UseCases/UC-001` … `UC-005`** (SSD는 UC 파일 내 섹션)
@@ -79,7 +85,8 @@ CMakeLists.txt
 ## 시작 방법
 
 1. `@docs/Preliminary-Requirements.md` + **Plan-01** skill → FR/NFR 작성
-2. **OOA-01** → Use Case Diagram · UC·SSD
-3. **OOA-02** → Domain Model
-4. **OOD-01** → SD·DCD·Traceability
-5. **OOI-01** → C++ 구현·gtest(WSL)·GUI System test
+2. **OOA-01** → Quality Attribute · QAS (ISO 25023 Response Measure)
+3. **OOA-02** → Use Case Diagram · UC·SSD
+4. **OOA-03** → Domain Model
+5. **OOD-01** → SD·DCD·Traceability
+6. **OOI-01** → C++ 구현·gtest(WSL)·GUI System test

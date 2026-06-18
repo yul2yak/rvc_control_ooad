@@ -1,11 +1,11 @@
 ---
-name: ooa-01-usecases
+name: ooa-02-usecases
 description: >-
   docs/OOA/01-System-Requirements.md에서 Use Case Diagram, UC 텍스트, SSD를
   작성한다. docs/OOA/00-UseCase-Diagram.md 및 UseCases/UC-###.md 산출.
   OOA, use case diagram, SSD, system operation 작업 시 사용.
 ---
-# OOA 1단계: Use Case Diagram · Use Case · SSD
+# OOA 2단계: Use Case Diagram · Use Case · SSD
 
 `docs/OOA/01-System-Requirements.md`의 **FR·NFR**을 근거로 **Use Case Diagram → UC 텍스트 → SSD** 순으로 작성한다.
 

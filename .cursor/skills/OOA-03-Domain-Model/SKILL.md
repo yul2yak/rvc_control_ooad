@@ -1,11 +1,11 @@
 ---
-name: ooa-02-domain-model
+name: ooa-03-domain-model
 description: >-
   Use Case·SSD와 FR·NFR을 근거로 Domain Model(개념 클래스)을 작성한다.
   docs/OOA/02-Domain-Model.md 산출. OOA, domain model, conceptual class
   작업 시 사용.
 ---
-# OOA 2단계: Domain Model (Use Case 근거)
+# OOA 3단계: Domain Model (Use Case 근거)
 
 **Use Case·SSD**와 **FR·NFR**을 근거로 **Domain Model**(개념 모델)을 작성한다. 임의로 개념 추가 금지.
 
