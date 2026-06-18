@@ -1,17 +1,20 @@
 ---
-description: "GoogleTest — REQ/SPEC 기반 테스트 및 커버리지 90%"
+description: GoogleTest — FR/NFR 주석, WSL 실행, 커버리지 90%
 globs: test/**,tests/**,**/*_test.cpp,**/*_test.cc,**/gtest/**
 alwaysApply: false
 ---
 # GoogleTest (Project)
+
 - 테스트 프레임워크는 **Google Test (gtest)** 만 사용한다. 필요 시 **gmock**.
-- 테스트는 *기능 요구사항과 비기능 요구사항*에 근거한다. 각 테스트(또는 suite)에 ` FR-xxx` / `NFR-xxx`를 주석으로 표기
-한다.
+- 테스트는 *기능 요구사항과 비기능 요구사항*에 근거한다. 각 테스트(또는 suite)에 `FR-xxx` / `NFR-xxx`를 주석으로 표기한다.
 - **분기·라인 커버리지 목표: 90% 이상.** 변경 범위에 대해 커버리지를 측정하고, 미달 시 테스트를 보강한다.
+
 ## 실행 환경 (WSL)
-- Unit·Integration 빌드/테스트/커버리지는 **WSL(Linux) 터미널**에서 실행한다. Windows PowerShell에서의 빌드는 수행하
-지지 않는다.
+
+- Unit·Integration 빌드/테스트/커버리지는 **WSL(Linux) 터미널**에서 실행한다. Windows PowerShell에서의 빌드는 수행하지 않는다.
 - Cursor가 WSL에 연결된 상태에서 셸 명령을 실행한다.
+
 ## System test
-`testing-levels.mdc` 참고
+
+- System test 정책(시뮬레이터, 시나리오 수)은 `testing.mdc` 참고.
 - 커버리지 수치를 추정으로 보고하지 않는다. 측정하지 못하면 그 사실과 필요한 빌드 옵션을 명시한다.

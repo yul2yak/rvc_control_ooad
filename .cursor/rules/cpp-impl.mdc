@@ -1,16 +1,16 @@
 ---
+description: C++14 구현 — SOLID, 헤더/구현 분리, 범위 외 API 금지
+globs: include/**,src/**,**/*.h,**/*.hpp,**/*.cpp,**/*.cc
 alwaysApply: false
 ---
 # C++ 구현 (Project)
+
 * 모든 구현 코드는 **C++**로 작성하며, 프로젝트에서 정한 **C++14 기반의 기존 코드 스타일**을 따른다.
 * 객체지향 설계에는 **SOLID principles**를 적용한다.
 * **Single Responsibility Principle**: 각 클래스와 모듈은 하나의 책임만 가지며, 변경 이유가 하나로 제한되도록 설계한다.
 * **Open-Closed Principle**: 기존 코드의 수정을 최소화하고, 새로운 동작은 확장을 통해 추가할 수 있도록 설계한다.
-* **Liskov Substitution Principle**: 파생 타입은 기반 타입의 계약을 깨지 않아야 하며, 기반 타입을 사용하는 코드에서 동일하게 대
-체 가능해야 한다.
-* **Interface Segregation Principle**: 사용하지 않는 메서드에 의존하지 않도록, 비대한 인터페이스 대신 역할별로 분리된 인터페
-이스를 정의한다.
-* **Dependency Inversion Principle**: 고수준 모듈은 구체 구현체가 아닌 추상화에 의존해야 하며, HAL 및 드라이버 계층은 구현체
-로 분리한다.
+* **Liskov Substitution Principle**: 파생 타입은 기반 타입의 계약을 깨지 않아야 하며, 기반 타입을 사용하는 코드에서 동일하게 대체 가능해야 한다.
+* **Interface Segregation Principle**: 사용하지 않는 메서드에 의존하지 않도록, 비대한 인터페이스 대신 역할별로 분리된 인터페이스를 정의한다.
+* **Dependency Inversion Principle**: 고수준 모듈은 구체 구현체가 아닌 추상화에 의존해야 하며, HAL 및 드라이버 계층은 구현체로 분리한다.
 * 공개 API는 헤더 파일에 선언하고, 구현 세부사항은 `.cpp` 파일에 작성한다.
 * 요구사항과 설계에 명시되지 않은 API나 동작은 임의로 추가하지 않는다.
