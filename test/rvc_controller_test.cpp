@@ -103,7 +103,31 @@ TEST(RvcControllerTest, DustDetectorInterface_NFR003) {
     EXPECT_TRUE(dust.isDustPresent());
 }
 
-// §0.4 — cleaning stops during obstacle maneuver
+// FR-005 — dust cleared when cleaned
+TEST(RvcControllerTest, DustClearedOnForward_FR005) {
+    auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
+    map.setDust({{2, 2}});
+    rvc::ObstacleDetector obs(map);
+    rvc::DustDetector dust(map);
+    rvc::RvcController ctrl(map, obs, dust);
+
+    ctrl.startAutomaticCleaning();
+    EXPECT_FALSE(map.hasDust({2, 2}));
+}
+
+// FR-003/FR-004 — keep turning until front is clear (no left/right trap)
+TEST(RvcControllerTest, TurnAsideUntilFrontClear_FR003) {
+    auto map = makeMap(6, 6, {2, 2}, rvc::Direction::North);
+    map.setObstacles({{2, 1}, {1, 2}, {3, 2}, {3, 3}});
+    rvc::ObstacleDetector obs(map);
+    rvc::DustDetector dust(map);
+    rvc::RvcController ctrl(map, obs, dust);
+
+    ctrl.handleSurroundedObstacle();
+    EXPECT_FALSE(map.isFrontBlocked());
+}
+
+// section 0.4 — cleaning stops during obstacle maneuver
 TEST(RvcControllerTest, CleaningStopsDuringManeuver_S04) {
     auto map = makeMap(6, 6, {2, 3}, rvc::Direction::North);
     map.setObstacles({{2, 2}});

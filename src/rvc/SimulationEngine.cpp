@@ -5,18 +5,10 @@
 namespace rvc {
 
 EnvironmentEvent detectEnvironmentEvent(const MapModel& map) {
-    const Position front = map.cellInFront();
-    const Position left = map.cellToLeft();
-    const Position right = map.cellToRight();
-
-    const bool frontBlocked = !map.isInBounds(front) || map.isObstacle(front);
-    const bool leftBlocked = !map.isInBounds(left) || map.isObstacle(left);
-    const bool rightBlocked = !map.isInBounds(right) || map.isObstacle(right);
-
-    if (frontBlocked && leftBlocked && rightBlocked) {
+    if (map.isSurrounded()) {
         return EnvironmentEvent::Surrounded;
     }
-    if (frontBlocked) {
+    if (map.isFrontBlocked()) {
         return EnvironmentEvent::ObstacleFront;
     }
     if (map.hasDust(map.rvcPosition())) {
@@ -30,10 +22,18 @@ SimulationEngine::SimulationEngine()
       dustDetector_(map_),
       controller_(map_, obstacleDetector_, dustDetector_) {}
 
+void SimulationEngine::reloadLayout(const MapScenario& scenario) {
+    scenario_ = scenario;
+    map_.setSize(scenario.width, scenario.height);
+    map_.setObstacles(scenario.obstacles);
+    map_.setDust(scenario.dust);
+}
+
 void SimulationEngine::loadScenario(const MapScenario& scenario) {
     scenario_ = scenario;
     applyScenarioToMap(scenario_, map_);
     sessionActive_ = false;
+    controller_.resetManeuver();
 }
 
 MapScenario SimulationEngine::currentScenario() const {
@@ -43,9 +43,13 @@ MapScenario SimulationEngine::currentScenario() const {
     return s;
 }
 
+bool SimulationEngine::isSessionActive() const {
+    return sessionActive_;
+}
+
 void SimulationEngine::triggerStart() {
     sessionActive_ = true;
-    controller_.startAutomaticCleaning();
+    controller_.activateCleaningSession();
 }
 
 void SimulationEngine::triggerObstacle() {
@@ -63,22 +67,18 @@ void SimulationEngine::triggerDust() {
     controller_.handleDustDetected();
 }
 
-void SimulationEngine::autoTickStep() {
-    if (!sessionActive_) {
-        return;
-    }
-    controller_.onSimulationTick();
-    const EnvironmentEvent event = detectEnvironmentEvent(map_);
-    switch (event) {
+void SimulationEngine::processEnvironmentEvent() {
+    switch (detectEnvironmentEvent(map_)) {
         case EnvironmentEvent::Surrounded:
-            controller_.handleSurroundedObstacle();
+            controller_.beginSurroundedAvoidance();
+            controller_.stepManeuver();
             break;
         case EnvironmentEvent::ObstacleFront:
-            controller_.handleObstacleDetected();
+            controller_.beginObstacleAvoidance();
+            controller_.stepManeuver();
             break;
         case EnvironmentEvent::Dust:
             controller_.handleDustDetected();
-            map_.clearDustAt(map_.rvcPosition());
             break;
         case EnvironmentEvent::None:
             controller_.movement_.moveForwardWithCleaning();
@@ -86,15 +86,30 @@ void SimulationEngine::autoTickStep() {
     }
 }
 
+void SimulationEngine::autoTickStep() {
+    if (!sessionActive_) {
+        return;
+    }
+    controller_.onSimulationTick();
+    if (controller_.maneuverInProgress()) {
+        controller_.stepManeuver();
+        return;
+    }
+    processEnvironmentEvent();
+}
+
 void SimulationEngine::tickOnce() {
-    if (scenario_.trigger == "obstacle") {
-        triggerObstacle();
-    } else if (scenario_.trigger == "surrounded") {
-        triggerSurrounded();
-    } else if (scenario_.trigger == "dust") {
-        triggerDust();
-    } else if (!sessionActive_) {
-        triggerStart();
+    if (!sessionActive_) {
+        if (scenario_.trigger == "obstacle") {
+            triggerObstacle();
+        } else if (scenario_.trigger == "surrounded") {
+            triggerSurrounded();
+        } else if (scenario_.trigger == "dust") {
+            triggerDust();
+        } else {
+            triggerStart();
+            autoTickStep();
+        }
     } else {
         autoTickStep();
     }

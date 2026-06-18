@@ -54,6 +54,9 @@ if(RVC_BUILD_SYSTEM_TEST)
 endif()
 
 if(RVC_BUILD_SIMULATOR)
+    if(NOT SFML_DIR AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SFML/lib/cmake/SFML/SFMLConfig.cmake")
+        set(SFML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SFML/lib/cmake/SFML" CACHE PATH "SFML cmake config")
+    endif()
     find_package(SFML 2.5 COMPONENTS graphics window system QUIET)
     if(SFML_FOUND)
         add_executable(rvc_sim
@@ -62,6 +65,16 @@ if(RVC_BUILD_SIMULATOR)
         )
         target_include_directories(rvc_sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sim)
         target_link_libraries(rvc_sim PRIVATE rvc_core sfml-graphics sfml-window sfml-system)
+        if(MSVC)
+            target_compile_options(rvc_sim PRIVATE /utf-8)
+        endif()
+        if(WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SFML/bin")
+            add_custom_command(TARGET rvc_sim POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SFML/bin"
+                    "$<TARGET_FILE_DIR:rvc_sim>"
+                COMMENT "Copy SFML runtime DLLs next to rvc_sim")
+        endif()
     else()
         message(WARNING "SFML not found — rvc_sim GUI target skipped. Install SFML or set SFML_DIR.")
     endif()

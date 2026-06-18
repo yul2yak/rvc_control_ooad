@@ -15,20 +15,98 @@ RvcController::RvcController(MapModel& map, ObstacleDetector& obstacleDetector,
       dustDetector_(dustDetector),
       movement_(map, cleaning_, obstacleDetector_) {}
 
-void RvcController::startAutomaticCleaning() {
+void RvcController::resetManeuver() {
+    maneuverPhase_ = ManeuverPhase::Idle;
+    turnAttemptsFront_ = 0;
+    turnAttemptsSurrounded_ = 0;
+    firstTurnDone_ = false;
+}
+
+bool RvcController::maneuverInProgress() const {
+    return maneuverPhase_ != ManeuverPhase::Idle;
+}
+
+void RvcController::activateCleaningSession() {
     cleaning_.activateCleaningAndMopping();
+}
+
+void RvcController::startAutomaticCleaning() {
+    activateCleaningSession();
     movement_.moveForwardWithCleaning();
 }
 
-void RvcController::handleObstacleDetected() {
+void RvcController::beginObstacleAvoidance() {
     cleaning_.stopCleaning();
-    turnAsideAndResume();
+    maneuverPhase_ = ManeuverPhase::TurnAside;
+    turnAttemptsFront_ = 0;
+    turnAttemptsSurrounded_ = 0;
+    firstTurnDone_ = false;
+}
+
+void RvcController::beginSurroundedAvoidance() {
+    cleaning_.stopCleaning();
+    maneuverPhase_ = ManeuverPhase::Backward;
+    turnAttemptsFront_ = 0;
+    turnAttemptsSurrounded_ = 0;
+    firstTurnDone_ = false;
+}
+
+void RvcController::doTurnOnce() {
+    if (movement_.canTurnRight()) {
+        movement_.turnRight();
+    } else {
+        movement_.turnLeft();
+    }
+}
+
+bool RvcController::stepManeuver() {
+    switch (maneuverPhase_) {
+        case ManeuverPhase::Backward:
+            movement_.moveBackward();
+            maneuverPhase_ = ManeuverPhase::TurnAside;
+            return true;
+        case ManeuverPhase::TurnAside:
+            if (!firstTurnDone_) {
+                doTurnOnce();
+                firstTurnDone_ = true;
+                return true;
+            }
+            if (map_.isFrontBlocked() && turnAttemptsFront_ < 3) {
+                doTurnOnce();
+                ++turnAttemptsFront_;
+                return true;
+            }
+            if (map_.isSurrounded() && turnAttemptsSurrounded_ < 4) {
+                doTurnOnce();
+                ++turnAttemptsSurrounded_;
+                return true;
+            }
+            if (!map_.isFrontBlocked()) {
+                maneuverPhase_ = ManeuverPhase::Forward;
+                return true;
+            }
+            maneuverPhase_ = ManeuverPhase::Idle;
+            return false;
+        case ManeuverPhase::Forward:
+            movement_.resumeForwardWithCleaning();
+            maneuverPhase_ = ManeuverPhase::Idle;
+            return false;
+        case ManeuverPhase::Idle:
+            return false;
+    }
+    return false;
+}
+
+void RvcController::handleObstacleDetected() {
+    beginObstacleAvoidance();
+    while (stepManeuver()) {
+    }
 }
 
 void RvcController::handleSurroundedObstacle() {
-    cleaning_.stopCleaning();
-    movement_.moveBackward();
-    turnAsideAndResume();
+    beginSurroundedAvoidance();
+    while (stepManeuver()) {
+    }
 }
 
 void RvcController::handleDustDetected() {
@@ -36,6 +114,7 @@ void RvcController::handleDustDetected() {
         return;
     }
     cleaning_.boostCleaningPower(3);
+    map_.clearDustAt(map_.rvcPosition());
     movement_.moveForwardWithCleaning();
 }
 
@@ -44,12 +123,9 @@ void RvcController::onSimulationTick() {
 }
 
 void RvcController::turnAsideAndResume() {
-    if (movement_.canTurnRight()) {
-        movement_.turnRight();
-    } else {
-        movement_.turnLeft();
+    beginObstacleAvoidance();
+    while (stepManeuver()) {
     }
-    movement_.resumeForwardWithCleaning();
 }
 
 RvcSnapshot RvcController::snapshot() const {

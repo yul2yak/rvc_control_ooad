@@ -16,15 +16,17 @@ MovementController::MovementController(MapModel& map, CleaningService& cleaning,
 void MovementController::moveForwardWithCleaning() {
     heading_ = map_.rvcHeading();
     movementKind_ = MovementKind::Forward;
-    moveOneStep(heading_);
-    cleaning_.syncForwardCleaningState();
+    if (!map_.isFrontBlocked()) {
+        moveOneStep(heading_, true);
+        cleaning_.syncForwardCleaningState();
+    }
 }
 
 void MovementController::moveBackward() {
     heading_ = map_.rvcHeading();
     movementKind_ = MovementKind::Backward;
     int back = (static_cast<int>(heading_) + 2) % 4;
-    moveOneStep(static_cast<Direction>(back));
+    moveOneStep(static_cast<Direction>(back), false);
 }
 
 void MovementController::turnRight() {
@@ -46,14 +48,20 @@ bool MovementController::canTurnRight() {
     return obstacleDetector_.isRightTurnFeasible();
 }
 
+bool MovementController::isFrontBlocked() const {
+    return map_.isFrontBlocked();
+}
+
 void MovementController::resumeForwardWithCleaning() {
     heading_ = map_.rvcHeading();
     movementKind_ = MovementKind::Forward;
-    moveOneStep(heading_);
-    cleaning_.syncForwardCleaningState();
+    if (!map_.isFrontBlocked()) {
+        moveOneStep(heading_, true);
+        cleaning_.syncForwardCleaningState();
+    }
 }
 
-void MovementController::moveOneStep(Direction dir) {
+void MovementController::moveOneStep(Direction dir, bool clearDustOnArrival) {
     Position next = map_.rvcPosition();
     Position delta = offsetForDirection(dir);
     next.x += delta.x;
@@ -61,6 +69,9 @@ void MovementController::moveOneStep(Direction dir) {
     if (map_.isInBounds(next) && !map_.isObstacle(next)) {
         map_.setRvcPosition(next);
         map_.recordPathPoint(next);
+        if (clearDustOnArrival) {
+            map_.clearDustAt(next);
+        }
     }
     heading_ = map_.rvcHeading();
 }

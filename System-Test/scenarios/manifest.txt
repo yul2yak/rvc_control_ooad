@@ -23,3 +23,4 @@ System-Test/scenarios/ST-021.json
 System-Test/scenarios/ST-022.json
 System-Test/scenarios/ST-023.json
 System-Test/scenarios/ST-024.json
+System-Test/scenarios/ST-025.json

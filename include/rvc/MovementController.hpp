@@ -17,6 +17,7 @@ public:
     void turnRight();
     void turnLeft();
     bool canTurnRight();
+    bool isFrontBlocked() const;
     void resumeForwardWithCleaning();
 
     Direction heading() const { return heading_; }
@@ -29,7 +30,7 @@ private:
     Direction heading_;
     MovementKind movementKind_;
 
-    void moveOneStep(Direction dir);
+    void moveOneStep(Direction dir, bool clearDustOnArrival);
 };
 
 }  // namespace rvc

@@ -30,6 +30,10 @@ public:
     bool isObstacle(const Position& pos) const;
     bool hasDust(const Position& pos) const;
     void clearDustAt(const Position& pos);
+    const std::vector<Position>& dustCells() const { return dust_; }
+
+    bool isFrontBlocked() const;
+    bool isSurrounded() const;
 
     Position rvcPosition() const { return rvcPos_; }
     Direction rvcHeading() const { return heading_; }

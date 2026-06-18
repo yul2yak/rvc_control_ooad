@@ -70,6 +70,32 @@ TEST(SimulationEngineTest, DustTrigger_FR005) {
     EXPECT_EQ(engine.controller().snapshot().level, rvc::OutputLevel::Boosted);
 }
 
+// ST-025 regression — active session + surrounded L/R/F during auto ticks (sim edit bug)
+TEST(SimulationEngineTest, ReloadLayoutKeepsSession_SurroundedAutoTick) {
+    rvc::MapScenario scenario;
+    scenario.width = 10;
+    scenario.height = 10;
+    scenario.rvcStart = {5, 7};
+    scenario.rvcHeading = rvc::Direction::North;
+    scenario.trigger = "start";
+
+    rvc::SimulationEngine engine;
+    engine.loadScenario(scenario);
+    engine.tickOnce();
+    EXPECT_EQ(engine.map().rvcPosition(), (rvc::Position{5, 6}));
+
+    scenario.obstacles = {{5, 5}, {4, 6}, {6, 6}};
+    engine.reloadLayout(scenario);
+    EXPECT_TRUE(engine.map().isSurrounded());
+
+    const rvc::Position posBefore = engine.map().rvcPosition();
+    const rvc::Direction headingBefore = engine.map().rvcHeading();
+    engine.tickOnce();
+    const bool recovered = engine.map().rvcPosition() != posBefore ||
+                           engine.map().rvcHeading() != headingBefore;
+    EXPECT_TRUE(recovered);
+}
+
 // MapJson serialization
 TEST(SimulationEngineTest, MapJsonRoundTrip) {
     rvc::MapScenario scenario;

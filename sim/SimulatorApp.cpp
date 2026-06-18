@@ -3,29 +3,177 @@
 #include "rvc/MapJson.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <sstream>
+
+const float SimulatorApp::kAutoTickIntervalSec = 0.5f;
 
 namespace {
 
-sf::Color headingColor(rvc::Direction d) {
-    switch (d) {
-        case rvc::Direction::North:
-            return sf::Color(80, 160, 255);
-        case rvc::Direction::East:
-            return sf::Color(80, 220, 120);
-        case rvc::Direction::South:
-            return sf::Color(255, 180, 80);
-        case rvc::Direction::West:
-            return sf::Color(200, 120, 255);
-    }
-    return sf::Color::White;
+const sf::Color kObstacleColor(220, 60, 60);
+const sf::Color kDustColor(240, 210, 50);
+const sf::Color kRvcBodyColor(50, 110, 230);
+const sf::Color kRvcArrowColor(180, 220, 255);
+const sf::Color kButtonFill(50, 55, 70);
+const sf::Color kButtonActive(70, 120, 180);
+const sf::Color kButtonHover(65, 75, 95);
+
+constexpr float kPanelPad = 12.f;
+constexpr float kLegendRow = 20.f;
+constexpr float kHelpRow = 15.f;
+
+sf::String toSfString(const std::string& utf8) {
+    return sf::String::fromUtf8(utf8.begin(), utf8.end());
+}
+
+void setUtf8Text(sf::Text& text, const std::string& utf8) {
+    text.setString(toSfString(utf8));
 }
 
 }  // namespace
 
 SimulatorApp::SimulatorApp()
-    : window_(sf::VideoMode(800, 600), "RVC SW Controller Simulator") {
+    : window_(sf::VideoMode(920, 680), "RVC SW Controller Simulator") {
+    loadFont();
+    loadScenarioManifest();
     resetDefaultScenario();
+    relayoutPanel();
+    refreshSelectedScenarioLabel();
+    applyWindowTitle();
+}
+
+const char* SimulatorApp::tr(const char* ko, const char* en) const {
+    return englishUi_ ? en : ko;
+}
+
+void SimulatorApp::applyWindowTitle() {
+    window_.setTitle(toSfString(tr("RVC SW Controller 시뮬레이터", "RVC SW Controller Simulator")));
+}
+
+void SimulatorApp::toggleLanguage() {
+    englishUi_ = !englishUi_;
+    applyWindowTitle();
+    relayoutPanel();
+    updateStatusFromSnapshot();
+}
+
+void SimulatorApp::relayoutPanel() {
+    const float x = panelX() + kPanelPad;
+    const float w = static_cast<float>(kPanelWidth) - kPanelPad * 2.f;
+
+    legendStartY_ = kPanelPad;
+    const float legendHeight = 22.f + kLegendRow * 3.f;
+    const float langY = legendStartY_ + legendHeight + 6.f;
+    langButtonBounds_ = sf::FloatRect(x, langY, w, 24.f);
+    helpStartY_ = langY + 24.f + 8.f;
+
+    const float helpLines = 6.f;
+    const float helpHeight = 18.f + helpLines * kHelpRow;
+    scenarioStartY_ = helpStartY_ + helpHeight + 10.f;
+    buttonsStartY_ = scenarioStartY_ + 38.f;
+    statusStartY_ = static_cast<float>(window_.getSize().y) - 64.f;
+    layoutButtons(buttonsStartY_);
+}
+
+std::string SimulatorApp::buttonLabel(SimAction id) const {
+    switch (id) {
+        case SimAction::Start:
+            return tr("시작 (S)", "Start (S)");
+        case SimAction::Tick:
+            return tr("틱 x1 (T)", "Tick x1 (T)");
+        case SimAction::Run:
+            return tr("N틱 실행 (R)", "Run N ticks (R)");
+        case SimAction::AutoPlay:
+            return tr("자동 0.5초 (A)", "Auto 0.5s (A)");
+        case SimAction::Edit:
+            return tr("맵 편집 (E)", "Edit map (E)");
+        case SimAction::Obstacle:
+            return tr("장애물 (O)", "Obstacle (O)");
+        case SimAction::Dust:
+            return tr("먼지 (D)", "Dust (D)");
+        case SimAction::ScenarioPrev:
+            return tr("이전 ([)", "Prev ([)");
+        case SimAction::ScenarioNext:
+            return tr("다음 (])", "Next (])");
+        case SimAction::Load:
+            return tr("시나리오 로드 (L)", "Load selected (L)");
+        case SimAction::Save:
+            return tr("맵 저장 (F5)", "Save map (F5)");
+        case SimAction::Reset:
+            return tr("맵 리셋 (N)", "Reset map (N)");
+        default:
+            return "";
+    }
+}
+
+bool SimulatorApp::loadFont() {
+    const char* candidates[] = {
+        "C:/Windows/Fonts/malgun.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/segoeui.ttf",
+    };
+    for (const char* path : candidates) {
+        if (font_.loadFromFile(path)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void SimulatorApp::loadScenarioManifest() {
+    scenarioFiles_.clear();
+    std::ifstream in("System-Test/scenarios/manifest.txt");
+    if (!in) {
+        return;
+    }
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+        scenarioFiles_.push_back(line);
+    }
+    scenarioIndex_ = 0;
+}
+
+void SimulatorApp::refreshSelectedScenarioLabel() {
+    if (scenarioFiles_.empty()) {
+        selectedScenarioLabel_ = tr("(시나리오 없음)", "(no scenarios)");
+        return;
+    }
+    if (scenarioIndex_ < 0) {
+        scenarioIndex_ = 0;
+    }
+    if (scenarioIndex_ >= static_cast<int>(scenarioFiles_.size())) {
+        scenarioIndex_ = static_cast<int>(scenarioFiles_.size()) - 1;
+    }
+    rvc::MapScenario meta;
+    const std::string& path = scenarioFiles_[static_cast<std::size_t>(scenarioIndex_)];
+    if (rvc::loadScenarioFromFile(path, meta)) {
+        selectedScenarioLabel_ = meta.id + " — " + meta.name;
+    } else {
+        selectedScenarioLabel_ = path;
+    }
+}
+
+void SimulatorApp::selectScenarioDelta(int delta) {
+    if (scenarioFiles_.empty()) {
+        return;
+    }
+    scenarioIndex_ = (scenarioIndex_ + delta) % static_cast<int>(scenarioFiles_.size());
+    if (scenarioIndex_ < 0) {
+        scenarioIndex_ += static_cast<int>(scenarioFiles_.size());
+    }
+    refreshSelectedScenarioLabel();
+}
+
+void SimulatorApp::loadSelectedScenario() {
+    if (scenarioFiles_.empty()) {
+        statusMessage_ = tr("manifest에 시나리오 없음", "No scenarios in manifest");
+        return;
+    }
+    loadScenarioFile(scenarioFiles_[static_cast<std::size_t>(scenarioIndex_)]);
+    refreshSelectedScenarioLabel();
 }
 
 void SimulatorApp::resetDefaultScenario() {
@@ -42,18 +190,80 @@ void SimulatorApp::resetDefaultScenario() {
     scenario_.expectedPath.clear();
     engine_.loadScenario(scenario_);
     tickCount_ = 0;
-    statusMessage_ = "Ready — S:start  T:tick  R:run  L/S:load/save  E:edit  O/D:obstacle/dust";
+    autoPlayMode_ = false;
+    editMode_ = false;
+    updateStatusFromSnapshot();
+}
+
+float SimulatorApp::panelX() const {
+    return static_cast<float>(window_.getSize().x - kPanelWidth);
+}
+
+void SimulatorApp::layoutButtons(float startY) {
+    buttons_.clear();
+    const float x = panelX() + kPanelPad;
+    float y = startY;
+    const float w = static_cast<float>(kPanelWidth) - kPanelPad * 2.f;
+    const float h = 24.f;
+    const float gap = 4.f;
+    const float halfW = (w - gap) / 2.f;
+
+    auto add = [&](SimAction id, bool toggle = false) {
+        buttons_.push_back({sf::FloatRect(x, y, w, h), buttonLabel(id), id, toggle, false});
+        y += h + gap;
+    };
+    auto addHalf = [&](SimAction id, float bx) {
+        buttons_.push_back({sf::FloatRect(bx, y, halfW, h), buttonLabel(id), id, false, false});
+    };
+
+    add(SimAction::Start);
+    add(SimAction::Tick);
+    add(SimAction::Run);
+    add(SimAction::AutoPlay, true);
+    add(SimAction::Edit, true);
+    add(SimAction::Obstacle, true);
+    add(SimAction::Dust, true);
+    addHalf(SimAction::ScenarioPrev, x);
+    addHalf(SimAction::ScenarioNext, x + halfW + gap);
+    y += h + gap;
+    add(SimAction::Load);
+    add(SimAction::Save);
+    add(SimAction::Reset);
 }
 
 sf::Vector2i SimulatorApp::pixelToGrid(int px, int py) const {
-    if (px >= static_cast<int>(window_.getSize().x) - kPanelWidth) {
+    if (!isInGridArea(px, py)) {
         return {-1, -1};
     }
     return {px / kCellSize, py / kCellSize};
 }
 
-void SimulatorApp::handleMouseEdit(int gridX, int gridY) {
+bool SimulatorApp::isInGridArea(int px, int py) const {
+    return px >= 0 && px < static_cast<int>(panelX()) && py >= 0 &&
+           py < static_cast<int>(window_.getSize().y);
+}
+
+SimulatorApp::SimAction SimulatorApp::hitTestButton(int px, int py) const {
+    if (px < static_cast<int>(panelX())) {
+        return SimAction::None;
+    }
+    const sf::Vector2f p(static_cast<float>(px), static_cast<float>(py));
+    if (langButtonBounds_.contains(p)) {
+        return SimAction::ToggleLanguage;
+    }
+    for (const auto& btn : buttons_) {
+        if (btn.bounds.contains(p)) {
+            return btn.id;
+        }
+    }
+    return SimAction::None;
+}
+
+void SimulatorApp::handleGridClick(int gridX, int gridY) {
     if (!editMode_ || gridX < 0 || gridY < 0) {
+        return;
+    }
+    if (gridX >= scenario_.width || gridY >= scenario_.height) {
         return;
     }
     rvc::Position p{gridX, gridY};
@@ -69,7 +279,9 @@ void SimulatorApp::handleMouseEdit(int gridX, int gridY) {
     } else {
         dust.push_back(p);
     }
-    engine_.loadScenario(scenario_);
+    scenario_.rvcStart = engine_.map().rvcPosition();
+    scenario_.rvcHeading = engine_.map().rvcHeading();
+    engine_.reloadLayout(scenario_);
 }
 
 void SimulatorApp::loadScenarioFile(const std::string& path) {
@@ -78,9 +290,9 @@ void SimulatorApp::loadScenarioFile(const std::string& path) {
         scenario_ = loaded;
         engine_.loadScenario(scenario_);
         tickCount_ = 0;
-        statusMessage_ = "Loaded: " + path;
+        statusMessage_ = std::string(tr("로드: ", "Loaded: ")) + path;
     } else {
-        statusMessage_ = "Load failed: " + path;
+        statusMessage_ = std::string(tr("로드 실패: ", "Load failed: ")) + path;
     }
 }
 
@@ -88,10 +300,16 @@ void SimulatorApp::saveScenarioFile(const std::string& path) {
     scenario_.rvcStart = engine_.map().rvcPosition();
     scenario_.rvcHeading = engine_.map().rvcHeading();
     if (rvc::saveScenarioToFile(path, scenario_)) {
-        statusMessage_ = "Saved: " + path;
+        statusMessage_ = std::string(tr("저장: ", "Saved: ")) + path;
     } else {
-        statusMessage_ = "Save failed: " + path;
+        statusMessage_ = std::string(tr("저장 실패: ", "Save failed: ")) + path;
     }
+}
+
+void SimulatorApp::doSingleTick() {
+    engine_.tickOnce();
+    ++tickCount_;
+    updateStatusFromSnapshot();
 }
 
 void SimulatorApp::runTicks(int n) {
@@ -101,13 +319,80 @@ void SimulatorApp::runTicks(int n) {
 }
 
 void SimulatorApp::updateStatusFromSnapshot() {
+    scenario_.dust = engine_.map().dustCells();
     const rvc::RvcSnapshot snap = engine_.controller().snapshot();
+    const char* onOff = tr("켜짐", "ON");
+    const char* offOff = tr("꺼짐", "OFF");
     std::ostringstream ss;
-    ss << "tick=" << tickCount_ << " pos=(" << snap.position.x << "," << snap.position.y << ")"
-       << " heading=" << rvc::directionToString(snap.heading)
-       << " clean=" << (snap.cleaningActive ? "Y" : "N")
-       << " boost=" << (snap.level == rvc::OutputLevel::Boosted ? "Y" : "N");
+    ss << tr("틱=", "tick=") << tickCount_ << "  pos=(" << snap.position.x << ","
+       << snap.position.y << ")"
+       << "  dir=" << rvc::directionToString(snap.heading)
+       << "  clean=" << (snap.cleaningActive ? onOff : offOff)
+       << "  boost=" << (snap.level == rvc::OutputLevel::Boosted ? onOff : offOff);
+    if (autoPlayMode_) {
+        ss << tr("  [자동 0.5초]", "  [AUTO 0.5s]");
+    }
+    if (editMode_) {
+        ss << tr("  [편집:", "  [EDIT:") << (placingObstacle_ ? tr("장애물", "obstacle")
+                                                     : tr("먼지", "dust"))
+           << "]";
+    }
     statusMessage_ = ss.str();
+}
+
+void SimulatorApp::activateButton(SimulatorApp::SimAction id) {
+    switch (id) {
+        case SimAction::Start:
+            if (!engine_.isSessionActive()) {
+                doSingleTick();
+            }
+            break;
+        case SimAction::Tick:
+            doSingleTick();
+            break;
+        case SimAction::Run:
+            runTicks(scenario_.ticks > 0 ? scenario_.ticks : 1);
+            break;
+        case SimAction::AutoPlay:
+            autoPlayMode_ = !autoPlayMode_;
+            autoPlayClock_.restart();
+            updateStatusFromSnapshot();
+            break;
+        case SimAction::Edit:
+            editMode_ = !editMode_;
+            updateStatusFromSnapshot();
+            break;
+        case SimAction::Obstacle:
+            placingObstacle_ = true;
+            editMode_ = true;
+            updateStatusFromSnapshot();
+            break;
+        case SimAction::Dust:
+            placingObstacle_ = false;
+            editMode_ = true;
+            updateStatusFromSnapshot();
+            break;
+        case SimAction::Load:
+            loadSelectedScenario();
+            break;
+        case SimAction::ScenarioPrev:
+            selectScenarioDelta(-1);
+            break;
+        case SimAction::ScenarioNext:
+            selectScenarioDelta(+1);
+            break;
+        case SimAction::Save:
+            saveScenarioFile("System-Test/scenarios/custom_map.json");
+            break;
+        case SimAction::Reset:
+            resetDefaultScenario();
+            break;
+        case SimAction::ToggleLanguage:
+            toggleLanguage();
+            break;
+        default:
+            break;
+    }
 }
 
 void SimulatorApp::handleEvent(const sf::Event& event) {
@@ -117,44 +402,68 @@ void SimulatorApp::handleEvent(const sf::Event& event) {
     if (event.type == sf::Event::KeyPressed) {
         switch (event.key.code) {
             case sf::Keyboard::S:
-                engine_.triggerStart();
-                ++tickCount_;
-                updateStatusFromSnapshot();
+                activateButton(SimAction::Start);
                 break;
             case sf::Keyboard::T:
-                engine_.tickOnce();
-                ++tickCount_;
-                updateStatusFromSnapshot();
+                activateButton(SimAction::Tick);
                 break;
             case sf::Keyboard::R:
-                runTicks(scenario_.ticks > 0 ? scenario_.ticks : 1);
+                activateButton(SimAction::Run);
+                break;
+            case sf::Keyboard::A:
+                activateButton(SimAction::AutoPlay);
                 break;
             case sf::Keyboard::L:
-                loadScenarioFile("System-Test/scenarios/ST-001.json");
+                activateButton(SimAction::Load);
+                break;
+            case sf::Keyboard::LBracket:
+                activateButton(SimAction::ScenarioPrev);
+                break;
+            case sf::Keyboard::RBracket:
+                activateButton(SimAction::ScenarioNext);
                 break;
             case sf::Keyboard::F5:
-                saveScenarioFile("System-Test/scenarios/custom_map.json");
+                activateButton(SimAction::Save);
                 break;
             case sf::Keyboard::E:
-                editMode_ = !editMode_;
-                statusMessage_ = editMode_ ? "Edit mode ON" : "Edit mode OFF";
+                activateButton(SimAction::Edit);
                 break;
             case sf::Keyboard::O:
-                placingObstacle_ = true;
+                activateButton(SimAction::Obstacle);
                 break;
             case sf::Keyboard::D:
-                placingObstacle_ = false;
+                activateButton(SimAction::Dust);
                 break;
             case sf::Keyboard::N:
-                resetDefaultScenario();
+                activateButton(SimAction::Reset);
+                break;
+            case sf::Keyboard::H:
+                toggleLanguage();
                 break;
             default:
                 break;
         }
     }
     if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-        const sf::Vector2i g = pixelToGrid(event.mouseButton.x, event.mouseButton.y);
-        handleMouseEdit(g.x, g.y);
+        const int mx = event.mouseButton.x;
+        const int my = event.mouseButton.y;
+        const SimulatorApp::SimAction btn = hitTestButton(mx, my);
+        if (btn != SimAction::None) {
+            activateButton(btn);
+            return;
+        }
+        const sf::Vector2i g = pixelToGrid(mx, my);
+        handleGridClick(g.x, g.y);
+    }
+}
+
+void SimulatorApp::update() {
+    if (!autoPlayMode_) {
+        return;
+    }
+    if (autoPlayClock_.getElapsedTime().asSeconds() >= kAutoTickIntervalSec) {
+        autoPlayClock_.restart();
+        doSingleTick();
     }
 }
 
@@ -175,50 +484,246 @@ void SimulatorApp::drawGrid() {
     }
 }
 
+void SimulatorApp::drawRvc(const rvc::RvcSnapshot& snap) {
+    const float cx = static_cast<float>(snap.position.x * kCellSize + kCellSize / 2);
+    const float cy = static_cast<float>(snap.position.y * kCellSize + kCellSize / 2);
+    const float pad = 2.f;
+    const float radius = (static_cast<float>(kCellSize) - pad * 2.f) / 2.f;
+
+    sf::CircleShape body(radius);
+    body.setFillColor(kRvcBodyColor);
+    body.setOutlineColor(sf::Color(30, 70, 160));
+    body.setOutlineThickness(2.f);
+    body.setOrigin(radius, radius);
+    body.setPosition(cx, cy);
+    window_.draw(body);
+
+    sf::ConvexShape arrow(3);
+    arrow.setFillColor(kRvcArrowColor);
+    arrow.setOutlineColor(sf::Color(255, 255, 255, 120));
+    arrow.setOutlineThickness(1.f);
+    const float s = static_cast<float>(kCellSize) * 0.16f;
+    switch (snap.heading) {
+        case rvc::Direction::North:
+            arrow.setPoint(0, sf::Vector2f(0.f, -s * 1.35f));
+            arrow.setPoint(1, sf::Vector2f(-s * 0.75f, s * 0.35f));
+            arrow.setPoint(2, sf::Vector2f(s * 0.75f, s * 0.35f));
+            break;
+        case rvc::Direction::East:
+            arrow.setPoint(0, sf::Vector2f(s * 1.35f, 0.f));
+            arrow.setPoint(1, sf::Vector2f(-s * 0.35f, -s * 0.75f));
+            arrow.setPoint(2, sf::Vector2f(-s * 0.35f, s * 0.75f));
+            break;
+        case rvc::Direction::South:
+            arrow.setPoint(0, sf::Vector2f(0.f, s * 1.35f));
+            arrow.setPoint(1, sf::Vector2f(-s * 0.75f, -s * 0.35f));
+            arrow.setPoint(2, sf::Vector2f(s * 0.75f, -s * 0.35f));
+            break;
+        case rvc::Direction::West:
+            arrow.setPoint(0, sf::Vector2f(-s * 1.35f, 0.f));
+            arrow.setPoint(1, sf::Vector2f(s * 0.35f, -s * 0.75f));
+            arrow.setPoint(2, sf::Vector2f(s * 0.35f, s * 0.75f));
+            break;
+    }
+    arrow.setPosition(cx, cy);
+    window_.draw(arrow);
+}
+
 void SimulatorApp::drawEntities() {
-    sf::CircleShape dot(static_cast<float>(kCellSize) * 0.25f);
-    dot.setOrigin(dot.getRadius(), dot.getRadius());
+    const float pad = 4.f;
+    const float obsSize = static_cast<float>(kCellSize) - pad * 2.f;
 
     for (const auto& o : scenario_.obstacles) {
-        dot.setFillColor(sf::Color(200, 60, 60));
-        dot.setPosition(static_cast<float>(o.x * kCellSize + kCellSize / 2),
-                        static_cast<float>(o.y * kCellSize + kCellSize / 2));
-        window_.draw(dot);
+        sf::RectangleShape obs(sf::Vector2f(obsSize, obsSize));
+        obs.setFillColor(kObstacleColor);
+        obs.setOutlineColor(sf::Color(140, 30, 30));
+        obs.setOutlineThickness(1.5f);
+        obs.setPosition(static_cast<float>(o.x * kCellSize + pad),
+                        static_cast<float>(o.y * kCellSize + pad));
+        window_.draw(obs);
     }
-    for (const auto& d : scenario_.dust) {
-        dot.setFillColor(sf::Color(220, 200, 60));
-        dot.setPosition(static_cast<float>(d.x * kCellSize + kCellSize / 2),
-                        static_cast<float>(d.y * kCellSize + kCellSize / 2));
-        window_.draw(dot);
+
+    const float dustRadius = static_cast<float>(kCellSize) * 0.22f;
+    for (const auto& d : engine_.map().dustCells()) {
+        sf::CircleShape dust(dustRadius);
+        dust.setFillColor(kDustColor);
+        dust.setOutlineColor(sf::Color(180, 140, 20));
+        dust.setOutlineThickness(1.5f);
+        dust.setOrigin(dustRadius, dustRadius);
+        dust.setPosition(static_cast<float>(d.x * kCellSize + kCellSize / 2),
+                         static_cast<float>(d.y * kCellSize + kCellSize / 2));
+        window_.draw(dust);
     }
 
     const auto& path = engine_.map().path();
-    sf::VertexArray trail(sf::LineStrip, path.size());
-    for (std::size_t i = 0; i < path.size(); ++i) {
-        trail[i].position = sf::Vector2f(static_cast<float>(path[i].x * kCellSize + kCellSize / 2),
-                                         static_cast<float>(path[i].y * kCellSize + kCellSize / 2));
-        trail[i].color = sf::Color(100, 200, 255, 180);
-    }
     if (path.size() >= 2) {
+        sf::VertexArray trail(sf::LineStrip, path.size());
+        for (std::size_t i = 0; i < path.size(); ++i) {
+            trail[i].position =
+                sf::Vector2f(static_cast<float>(path[i].x * kCellSize + kCellSize / 2),
+                             static_cast<float>(path[i].y * kCellSize + kCellSize / 2));
+            trail[i].color = sf::Color(120, 200, 255, 160);
+        }
         window_.draw(trail);
     }
 
-    const rvc::RvcSnapshot snap = engine_.controller().snapshot();
-    sf::RectangleShape rvc(sf::Vector2f(static_cast<float>(kCellSize - 8),
-                                        static_cast<float>(kCellSize - 8)));
-    rvc.setFillColor(headingColor(snap.heading));
-    rvc.setPosition(static_cast<float>(snap.position.x * kCellSize + 4),
-                    static_cast<float>(snap.position.y * kCellSize + 4));
-    window_.draw(rvc);
+    drawRvc(engine_.controller().snapshot());
+}
+
+void SimulatorApp::drawTextLine(const std::string& text, float x, float y, unsigned int size,
+                                const sf::Color& color) {
+    sf::Text t;
+    t.setFont(font_);
+    setUtf8Text(t, text);
+    t.setCharacterSize(size);
+    t.setFillColor(color);
+    t.setPosition(x, y);
+    window_.draw(t);
+}
+
+void SimulatorApp::drawLanguageToggle() {
+    const sf::Vector2i mouse = sf::Mouse::getPosition(window_);
+    sf::RectangleShape rect(
+        sf::Vector2f(langButtonBounds_.width, langButtonBounds_.height));
+    rect.setPosition(langButtonBounds_.left, langButtonBounds_.top);
+    const bool hover = langButtonBounds_.contains(static_cast<float>(mouse.x),
+                                                  static_cast<float>(mouse.y));
+    rect.setFillColor(hover ? kButtonHover : kButtonFill);
+    rect.setOutlineColor(sf::Color(90, 95, 110));
+    rect.setOutlineThickness(1.f);
+    window_.draw(rect);
+
+    const std::string label =
+        englishUi_ ? tr("한국어로 전환 (H)", "Switch to Korean (H)")
+                   : tr("English (H)", "Switch to English (H)");
+    sf::Text t;
+    t.setFont(font_);
+    setUtf8Text(t, label);
+    t.setCharacterSize(11);
+    t.setFillColor(sf::Color(230, 230, 240));
+    const sf::FloatRect tb = t.getLocalBounds();
+    t.setPosition(langButtonBounds_.left + (langButtonBounds_.width - tb.width) / 2.f - tb.left,
+                  langButtonBounds_.top + (langButtonBounds_.height - tb.height) / 2.f - tb.top -
+                      2.f);
+    window_.draw(t);
+}
+
+void SimulatorApp::drawLegend() {
+    const float x = panelX() + kPanelPad;
+    float y = legendStartY_;
+    drawTextLine(tr("범례", "Legend"), x, y, 14, sf::Color(220, 220, 230));
+    y += 22.f;
+
+    sf::CircleShape rvcDot(7.f);
+    rvcDot.setFillColor(kRvcBodyColor);
+    rvcDot.setOutlineColor(sf::Color(30, 70, 160));
+    rvcDot.setOutlineThickness(1.f);
+    rvcDot.setPosition(x, y + 1.f);
+    window_.draw(rvcDot);
+    drawTextLine(tr("청소기 (파랑 원 + 방향)", "RVC (blue circle + arrow)"), x + 22.f, y, 12,
+                 sf::Color(190, 190, 200));
+    y += kLegendRow;
+
+    sf::RectangleShape obsBox(sf::Vector2f(14.f, 14.f));
+    obsBox.setFillColor(kObstacleColor);
+    obsBox.setPosition(x, y + 2.f);
+    window_.draw(obsBox);
+    drawTextLine(tr("장애물 (빨간 사각형)", "Obstacle (red square)"), x + 22.f, y, 12,
+                 sf::Color(190, 190, 200));
+    y += kLegendRow;
+
+    sf::CircleShape dustDot(7.f);
+    dustDot.setFillColor(kDustColor);
+    dustDot.setPosition(x, y + 2.f);
+    window_.draw(dustDot);
+    drawTextLine(tr("먼지 (노란 원)", "Dust (yellow circle)"), x + 22.f, y, 12,
+                 sf::Color(190, 190, 200));
+}
+
+void SimulatorApp::drawHelpText() {
+    const float x = panelX() + kPanelPad;
+    float y = helpStartY_;
+    drawTextLine(tr("조작 (키보드 / 클릭)", "Controls (keyboard / click)"), x, y, 13,
+                 sf::Color(160, 200, 255));
+    y += 18.f;
+    drawTextLine(tr("S 시작  T 틱  R N틱 실행", "S Start  T Tick  R Run"), x, y, 11,
+                 sf::Color(170, 170, 180));
+    y += kHelpRow;
+    drawTextLine(tr("A 자동 0.5초  E 편집", "A Auto 0.5s  E Edit"), x, y, 11,
+                 sf::Color(170, 170, 180));
+    y += kHelpRow;
+    drawTextLine(tr("O 장애물  D 먼지", "O Obstacle  D Dust"), x, y, 11,
+                 sf::Color(170, 170, 180));
+    y += kHelpRow;
+    drawTextLine(tr("[ 이전  ] 다음  L 로드", "[ Prev  ] Next  L Load"), x, y, 11,
+                 sf::Color(170, 170, 180));
+    y += kHelpRow;
+    drawTextLine(tr("F5 저장  N 리셋  H 언어", "F5 Save  N Reset  H Lang"), x, y, 11,
+                 sf::Color(170, 170, 180));
+    y += kHelpRow;
+    drawTextLine(tr("편집: 그리드 셀 클릭", "Edit: click grid cell"), x, y, 11,
+                 sf::Color(140, 140, 150));
+}
+
+void SimulatorApp::drawButtons() {
+    const sf::Vector2i mouse = sf::Mouse::getPosition(window_);
+    for (const auto& btn : buttons_) {
+        sf::RectangleShape rect(sf::Vector2f(btn.bounds.width, btn.bounds.height));
+        rect.setPosition(btn.bounds.left, btn.bounds.top);
+
+        const bool active =
+            (btn.id == SimAction::AutoPlay && autoPlayMode_) ||
+            (btn.id == SimAction::Edit && editMode_) ||
+            (btn.id == SimAction::Obstacle && editMode_ && placingObstacle_) ||
+            (btn.id == SimAction::Dust && editMode_ && !placingObstacle_);
+
+        const bool hover = btn.bounds.contains(static_cast<float>(mouse.x),
+                                               static_cast<float>(mouse.y));
+        if (active) {
+            rect.setFillColor(kButtonActive);
+        } else if (hover) {
+            rect.setFillColor(kButtonHover);
+        } else {
+            rect.setFillColor(kButtonFill);
+        }
+        rect.setOutlineColor(sf::Color(90, 95, 110));
+        rect.setOutlineThickness(1.f);
+        window_.draw(rect);
+
+        sf::Text label;
+        label.setFont(font_);
+        setUtf8Text(label, btn.label);
+        label.setCharacterSize(12);
+        label.setFillColor(sf::Color(230, 230, 240));
+        const sf::FloatRect tb = label.getLocalBounds();
+        label.setPosition(btn.bounds.left + (btn.bounds.width - tb.width) / 2.f - tb.left,
+                          btn.bounds.top + (btn.bounds.height - tb.height) / 2.f - tb.top - 2.f);
+        window_.draw(label);
+    }
 }
 
 void SimulatorApp::drawPanel() {
-    const float panelX = static_cast<float>(window_.getSize().x - kPanelWidth);
-    sf::RectangleShape panel(sf::Vector2f(static_cast<float>(kPanelWidth),
-                                            static_cast<float>(window_.getSize().y)));
-    panel.setPosition(panelX, 0.f);
+    sf::RectangleShape panel(
+        sf::Vector2f(static_cast<float>(kPanelWidth), static_cast<float>(window_.getSize().y)));
+    panel.setPosition(panelX(), 0.f);
     panel.setFillColor(sf::Color(28, 28, 36));
     window_.draw(panel);
+
+    drawLegend();
+    drawLanguageToggle();
+    drawHelpText();
+
+    drawTextLine(tr("시나리오", "Scenario"), panelX() + kPanelPad, scenarioStartY_, 13,
+                 sf::Color(160, 200, 255));
+    drawTextLine(selectedScenarioLabel_, panelX() + kPanelPad, scenarioStartY_ + 18.f, 11,
+                 sf::Color(200, 200, 210));
+
+    drawButtons();
+
+    drawTextLine(tr("상태", "Status"), panelX() + kPanelPad, statusStartY_, 13,
+                 sf::Color(160, 200, 255));
+    drawTextLine(statusMessage_, panelX() + kPanelPad, statusStartY_ + 20.f, 11,
+                 sf::Color(200, 200, 210));
 }
 
 void SimulatorApp::render() {
@@ -230,11 +735,13 @@ void SimulatorApp::render() {
 }
 
 int SimulatorApp::run() {
+    autoPlayClock_.restart();
     while (window_.isOpen()) {
         sf::Event event;
         while (window_.pollEvent(event)) {
             handleEvent(event);
         }
+        update();
         render();
     }
     return 0;

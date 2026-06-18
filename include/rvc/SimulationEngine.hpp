@@ -16,6 +16,7 @@ public:
     SimulationEngine();
 
     void loadScenario(const MapScenario& scenario);
+    void reloadLayout(const MapScenario& scenario);
     MapScenario currentScenario() const;
     RvcController& controller() { return controller_; }
     const RvcController& controller() const { return controller_; }
@@ -28,6 +29,7 @@ public:
     void tickOnce();
     void runTicks(int count);
 
+    bool isSessionActive() const;
     bool pathMatchesExpected() const;
 
 private:
@@ -38,6 +40,7 @@ private:
     MapScenario scenario_;
     bool sessionActive_ = false;
 
+    void processEnvironmentEvent();
     void autoTickStep();
 };
 

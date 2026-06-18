@@ -6,7 +6,7 @@
   "rvc": { "x": 5, "y": 7, "heading": "N" },
   "obstacles": [{"x":5,"y":5}],
   "dust": [],
-  "ticks": 4,
+  "ticks": 6,
   "trigger": "start",
   "expectedPath": [{"x":5,"y":7},{"x":5,"y":6},{"x":6,"y":6},{"x":7,"y":6},{"x":8,"y":6}]
 }
