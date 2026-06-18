@@ -1,0 +1,10 @@
+---
+description: 테스트 — Unit/Integration은 Agent·WSL, System은 GUI 시뮬레이터
+alwaysApply: false
+---
+# 테스트(Project)
+- Unit·Integration(필요시)만 **GoogleTest + cmake/ctest**로 실행한다.
+- 각각의 테스트는 **요구사항(FR/NFR)**에 근거한다.
+- System test는 GUI 시뮬레이터를 호출하여 수행한다.
+- System test는 최소 20개 이상의 구별된 시나리오로 테스트를 수행해야 한다.
+- 사용자 또한 simulator를 실행시킬 수 있어야 하며 gui 공간에서 시나리오를 직접 만들고 테스트할 수 있어야 한다.
