@@ -130,7 +130,7 @@
 | **범주** | Scope |
 | **요구** | 본 시스템은 **자동 청소 기능(automatic cleaning function)** 에만 초점을 둔다. |
 | **근거** | 명시적 범위 한정 |
-| **검증 방법** | 요구·설계·구현이 FR-001~005 및 관련 NFR 외 기능을 포함하지 않음 |
+| **검증 방법** | 요구·설계·구현이 FR-001–005 및 관련 NFR 외 기능을 포함하지 않음 |
 | **관련 FR** | FR-001 |
 | **출처** | IN-001 · L8 |
 
@@ -168,7 +168,7 @@
 
 | ID | 내용 (원문) | 출처 | 연관 FR/NFR |
 |----|-------------|------|-------------|
-| DEF-001 | The RVC will add or change sensors. | IN-001 · L11 | NFR-003, FR-003~005 확장성 |
+| DEF-001 | The RVC will add or change sensors. | IN-001 · L11 | NFR-003, FR-003–005 확장성 |
 | DEF-002 | It will be able to circulate one spot for a while. | IN-001 · L12 | FR-001 확장성 |
 | DEF-003 | It will have to communicate with a mobile app. | IN-001 · L13 | NFR-002 (범위 외) |
 | DEF-004 | It can do machine learning and inferring for more efficient cleaning. | IN-001 · L14 | NFR-002 (범위 외) |
